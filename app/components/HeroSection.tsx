@@ -149,7 +149,7 @@ export default function HeroSection() {
         </div>
 
         {/* ── Right: Dashboard Mockup ─────────────────────────── */}
-        <div className="reveal" style={{ transitionDelay: "0.1s", position: "relative", minHeight: "500px" }}>
+        <div className="reveal" style={{ transitionDelay: "0.1s", position: "relative", minHeight: "500px", paddingTop: "40px" }}>
           {/* Main glass panel */}
           <div
             className="glass-card"
@@ -237,41 +237,6 @@ export default function HeroSection() {
                   <span style={{ fontSize: "10px", color: "#ccc3d4" }}>{item.status}</span>
                 </div>
               ))}
-            </div>
-
-            {/* Floating micro-card */}
-            <div
-              className="glass-card"
-              style={{
-                position: "absolute",
-                bottom: "-16px",
-                left: "-32px",
-                padding: "16px",
-                borderRadius: "12px",
-                boxShadow: "0 25px 50px rgba(0,0,0,0.3)",
-                animation: "bounce 4s infinite",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div
-                  style={{
-                    width: "32px", height: "32px", borderRadius: "50%",
-                    background: "#d6baff",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: "16px", color: "#410a83", fontVariationSettings: "'FILL' 1" }}
-                  >
-                    psychology
-                  </span>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.75rem", fontWeight: 700 }}>Cognitive Peak</div>
-                  <div style={{ fontSize: "10px", color: "#ccc3d4" }}>Optimal learning window</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
