@@ -7,7 +7,6 @@ const navLinks = [
   { label: "Platform", href: "#", active: true },
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#showcase" },
-  { label: "Pricing", href: "#pricing" },
 ];
 
 export default function Navbar() {
@@ -105,7 +104,7 @@ export default function Navbar() {
             onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
             onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            Start Free Trial
+            Launch App
           </button>
         </div>
       </div>

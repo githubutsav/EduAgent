@@ -96,7 +96,7 @@ export default function CtaSection() {
                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
               >
-                Claim Your Free Trial
+                Get Started for Free
               </button>
               <button
                 className="glass-card"

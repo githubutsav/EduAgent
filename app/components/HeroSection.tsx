@@ -15,8 +15,11 @@ export default function HeroSection() {
   return (
     <section
       ref={sectionRef}
-      style={{ minHeight: "921px" }}
-      className="relative flex items-center px-8 max-w-[1440px] mx-auto py-20"
+      style={{
+        padding: "24px 32px 60px 32px",
+        position: "relative",
+      }}
+      className="max-w-desktop"
     >
       {/* Ambient blobs */}
       <div
@@ -47,11 +50,12 @@ export default function HeroSection() {
         <div className="reveal">
           {/* Badge */}
           <div
-            className="inline-flex items-center gap-2 rounded-full mb-8"
+            className="inline-flex items-center gap-2 rounded-full"
             style={{
               background: "rgba(214,186,255,0.10)",
               border: "1px solid rgba(214,186,255,0.20)",
               padding: "6px 16px",
+              marginBottom: "16px",
             }}
           >
             <span
@@ -80,7 +84,7 @@ export default function HeroSection() {
               fontWeight: 700,
               lineHeight: 1.1,
               letterSpacing: "-0.02em",
-              marginBottom: "1.5rem",
+              marginBottom: "16px",
             }}
           >
             The AI Classroom That&nbsp;
@@ -94,7 +98,7 @@ export default function HeroSection() {
               fontSize: "1rem",
               color: "#ccc3d4",
               lineHeight: 1.75,
-              marginBottom: "2.5rem",
+              marginBottom: "24px",
               maxWidth: "36rem",
             }}
           >

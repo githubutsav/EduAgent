@@ -3,7 +3,6 @@ import HeroSection from "./components/HeroSection";
 import TrustSection from "./components/TrustSection";
 import FeaturesGrid from "./components/FeaturesGrid";
 import ProductShowcase from "./components/ProductShowcase";
-import PricingSection from "./components/PricingSection";
 import CtaSection from "./components/CtaSection";
 import Footer from "./components/Footer";
 
@@ -16,7 +15,6 @@ export default function Home() {
         <TrustSection />
         <FeaturesGrid />
         <ProductShowcase />
-        <PricingSection />
         <CtaSection />
       </main>
       <Footer />
