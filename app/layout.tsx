@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {
   title: "MindHub AI | Intelligence Optimized",
@@ -28,8 +29,9 @@ export default function RootLayout({
         />
       </head>
       <body className="grid-pattern min-h-screen antialiased">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
 }
+
