@@ -1,29 +1,27 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 export default function HeroSection() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Immediately show above-fold hero items
-    sectionRef.current?.querySelectorAll(".reveal").forEach((el) => {
-      el.classList.add("active");
-    });
+    // Small delay to ensure a smooth entrance after mount
+    const timer = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <section
-      ref={sectionRef}
       style={{
         padding: "24px 32px 60px 32px",
         position: "relative",
       }}
       className="max-w-desktop"
     >
-      {/* Ambient blobs */}
+      {/* Ambient blobs — animated */}
       <div
-        className="pointer-events-none absolute rounded-full"
+        className="pointer-events-none absolute rounded-full animate-blob"
         style={{
           top: "-10rem",
           left: "-10rem",
@@ -34,7 +32,7 @@ export default function HeroSection() {
         }}
       />
       <div
-        className="pointer-events-none absolute rounded-full"
+        className="pointer-events-none absolute rounded-full animate-blob-delay"
         style={{
           top: "50%",
           right: "-10rem",
@@ -47,34 +45,46 @@ export default function HeroSection() {
 
       <div className="grid lg:grid-cols-2 gap-16 items-center w-full">
         {/* ── Left: Copy ─────────────────────────────────────── */}
-        <div className="reveal">
+        <div>
           {/* Badge */}
           <div
-            className="inline-flex items-center gap-2 rounded-full"
             style={{
-              background: "rgba(214,186,255,0.10)",
-              border: "1px solid rgba(214,186,255,0.20)",
-              padding: "6px 16px",
-              marginBottom: "16px",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(30px)",
+              transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1) 0s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0s",
             }}
+            className="inline-flex items-center gap-2 rounded-full"
           >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: "14px", color: "#d6baff", fontVariationSettings: "'FILL' 1" }}
-            >
-              auto_awesome
-            </span>
-            <span
+            <div
               style={{
-                color: "#d6baff",
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
+                background: "rgba(214,186,255,0.10)",
+                border: "1px solid rgba(214,186,255,0.20)",
+                padding: "6px 16px",
+                marginBottom: "16px",
+                borderRadius: "9999px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
-              AI-Powered Classroom Intelligence
-            </span>
+              <span
+                className="material-symbols-outlined animate-sparkle"
+                style={{ fontSize: "14px", color: "#d6baff", fontVariationSettings: "'FILL' 1" }}
+              >
+                auto_awesome
+              </span>
+              <span
+                style={{
+                  color: "#d6baff",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                AI-Powered Classroom Intelligence
+              </span>
+            </div>
           </div>
 
           {/* Headline */}
@@ -85,11 +95,14 @@ export default function HeroSection() {
               lineHeight: 1.1,
               letterSpacing: "-0.02em",
               marginBottom: "16px",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(30px)",
+              transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1) 0.12s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.12s",
             }}
           >
             The AI Classroom That&nbsp;
             <br />
-            <span className="gradient-text">Adapts To Every Student</span>
+            <span className="gradient-text-animated">Adapts To Every Student</span>
           </h1>
 
           {/* Subtext */}
@@ -100,6 +113,9 @@ export default function HeroSection() {
               lineHeight: 1.75,
               marginBottom: "24px",
               maxWidth: "36rem",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(30px)",
+              transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1) 0.24s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.24s",
             }}
           >
             Empower educators with real-time classroom insights and personalized
@@ -108,8 +124,18 @@ export default function HeroSection() {
           </p>
 
           {/* CTAs */}
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "1rem",
+              flexWrap: "wrap",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(30px)",
+              transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1) 0.36s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.36s",
+            }}
+          >
             <button
+              className="btn-shimmer"
               style={{
                 background: "#d6baff",
                 color: "#410a83",
@@ -120,9 +146,9 @@ export default function HeroSection() {
                 fontWeight: 700,
                 cursor: "pointer",
                 boxShadow: "0 10px 30px rgba(214,186,255,0.2)",
-                transition: "transform 0.15s",
+                transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1)",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
               onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
               Get Started for Free
@@ -139,8 +165,10 @@ export default function HeroSection() {
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                transition: "background 0.2s",
+                transition: "background 0.2s, transform 0.25s cubic-bezier(0.16,1,0.3,1)",
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
               <span className="material-symbols-outlined">play_circle</span>
               Watch Demo
@@ -149,10 +177,19 @@ export default function HeroSection() {
         </div>
 
         {/* ── Right: Dashboard Mockup ─────────────────────────── */}
-        <div className="reveal" style={{ transitionDelay: "0.1s", position: "relative", minHeight: "500px", paddingTop: "40px" }}>
-          {/* Main glass panel */}
+        <div
+          style={{
+            position: "relative",
+            minHeight: "500px",
+            paddingTop: "40px",
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateX(0)" : "translateX(60px)",
+            transition: "opacity 1s cubic-bezier(0.16,1,0.3,1) 0.3s, transform 1s cubic-bezier(0.16,1,0.3,1) 0.3s",
+          }}
+        >
+          {/* Main glass panel — floats gently */}
           <div
-            className="glass-card"
+            className="glass-card animate-float"
             style={{
               borderRadius: "16px",
               padding: "24px",
@@ -171,7 +208,11 @@ export default function HeroSection() {
                   width: "40px", height: "40px", borderRadius: "50%",
                   background: "rgba(214,186,255,0.2)",
                   display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "transform 0.3s",
+                  cursor: "pointer",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "rotate(90deg)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "rotate(0deg)")}
               >
                 <span className="material-symbols-outlined" style={{ color: "#d6baff" }}>more_horiz</span>
               </div>
@@ -210,7 +251,7 @@ export default function HeroSection() {
                   AI Tutor Status
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34d399" }} />
+                  <div className="pulse-ring" style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34d399" }} />
                   <span style={{ fontSize: "0.875rem" }}>Online &amp; Listening</span>
                 </div>
               </div>
@@ -230,6 +271,18 @@ export default function HeroSection() {
                     border: "1px solid rgba(255,255,255,0.05)",
                     borderRadius: "8px",
                     padding: "12px",
+                    transition: "background 0.3s, border-color 0.3s, transform 0.3s",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(214,186,255,0.08)";
+                    e.currentTarget.style.borderColor = "rgba(214,186,255,0.2)";
+                    e.currentTarget.style.transform = "translateX(4px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.transform = "translateX(0)";
                   }}
                 >
                   <span className="material-symbols-outlined" style={{ color: "#d6baff" }}>{item.icon}</span>

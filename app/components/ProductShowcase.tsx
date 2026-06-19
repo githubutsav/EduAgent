@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const sidebarIcons = ["grid_view", "calendar_today", "chat_bubble", "auto_awesome", "settings"];
 const modules = [
@@ -11,17 +11,18 @@ const modules = [
 
 export default function ProductShowcase() {
   const sectionRef = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add("active");
+          if (entry.isIntersecting) setVisible(true);
         });
       },
       { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
     );
-    sectionRef.current?.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
@@ -36,7 +37,15 @@ export default function ProductShowcase() {
     >
       <div style={{ padding: "0 32px", maxWidth: "1440px", margin: "0 auto", width: "100%" }}>
         {/* Header */}
-        <div className="reveal" style={{ textAlign: "center", marginBottom: "64px" }}>
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "64px",
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateY(0)" : "translateY(30px)",
+            transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)",
+          }}
+        >
           <h2 style={{ fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, marginBottom: "16px", letterSpacing: "-0.01em" }}>
             A Modern OS for Education
           </h2>
@@ -47,13 +56,16 @@ export default function ProductShowcase() {
 
         {/* Dashboard frame */}
         <div
-          className="glass-card reveal neon-glow-purple"
+          className={`glass-card ${visible ? "animate-breathing-glow" : ""}`}
           style={{
             borderRadius: "32px",
             padding: "32px",
             overflow: "hidden",
             position: "relative",
             border: "1px solid rgba(255, 255, 255, 0.05)",
+            opacity: visible ? 1 : 0,
+            transform: visible ? "scale(1)" : "scale(0.95)",
+            transition: "opacity 1s cubic-bezier(0.16,1,0.3,1) 0.2s, transform 1s cubic-bezier(0.16,1,0.3,1) 0.2s",
           }}
         >
           <div className="showcase-grid">
@@ -79,6 +91,17 @@ export default function ProductShowcase() {
                     color: i === 0 ? "#d6baff" : "#e2e1eb",
                     opacity: i === 0 ? 1 : 0.4,
                     cursor: "pointer",
+                    transition: "transform 0.3s, color 0.3s, opacity 0.3s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.25)";
+                    e.currentTarget.style.color = "#d6baff";
+                    e.currentTarget.style.opacity = "1";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.color = i === 0 ? "#d6baff" : "#e2e1eb";
+                    e.currentTarget.style.opacity = i === 0 ? "1" : "0.4";
                   }}
                 >
                   {icon}
@@ -123,12 +146,14 @@ export default function ProductShowcase() {
                     </h4>
                     <div style={{ height: "6px", width: "100%", background: "rgba(255, 255, 255, 0.2)", borderRadius: "9999px", overflow: "hidden", position: "relative" }}>
                       <div
+                        className={visible ? "animate-progress" : ""}
                         style={{
                           height: "100%",
-                          background: "#d6baff",
-                          width: "66.6%",
+                          background: "linear-gradient(90deg, #b88cff, #d6baff)",
+                          width: visible ? "66.6%" : "0%",
                           borderRadius: "9999px",
                           position: "relative",
+                          boxShadow: "0 0 12px rgba(214,186,255,0.5)",
                         }}
                       >
                         <div
@@ -157,13 +182,30 @@ export default function ProductShowcase() {
                     Course Chat
                   </h5>
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div style={{ display: "flex", gap: "12px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        opacity: visible ? 1 : 0,
+                        transform: visible ? "translateX(0)" : "translateX(-20px)",
+                        transition: "opacity 0.6s ease 0.5s, transform 0.6s ease 0.5s",
+                      }}
+                    >
                       <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#dbb8ff", flexShrink: 0 }} />
                       <div style={{ background: "rgba(214,186,255,0.1)", padding: "12px", borderRadius: "8px", fontSize: "12px", lineHeight: 1.5 }}>
                         &quot;How do I apply the vanishing point in a two-point perspective?&quot;
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: "12px", flexDirection: "row-reverse" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        flexDirection: "row-reverse",
+                        opacity: visible ? 1 : 0,
+                        transform: visible ? "translateX(0)" : "translateX(20px)",
+                        transition: "opacity 0.6s ease 0.9s, transform 0.6s ease 0.9s",
+                      }}
+                    >
                       <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#d6baff", flexShrink: 0 }} />
                       <div style={{ background: "rgba(255,255,255,0.05)", padding: "12px", borderRadius: "8px", fontSize: "12px", lineHeight: 1.5 }}>
                         &quot;Start by drawing your horizon line, Anna. The AI Tutor just sent a guide.&quot;
@@ -187,10 +229,22 @@ export default function ProductShowcase() {
                           justifyContent: "space-between",
                           padding: "8px",
                           borderRadius: "8px",
-                          transition: "background 0.2s",
+                          transition: "background 0.2s, border-color 0.2s, transform 0.2s",
                           background: m.active ? "rgba(214,186,255,0.1)" : "transparent",
                           border: m.active ? "1px solid rgba(214,186,255,0.2)" : "1px solid transparent",
                           cursor: m.active ? "default" : "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!m.active) {
+                            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                            e.currentTarget.style.transform = "translateX(4px)";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!m.active) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.transform = "translateX(0)";
+                          }
                         }}
                       >
                         <span style={{ fontSize: "14px", fontWeight: m.active ? 600 : 400 }}>{m.label}</span>
@@ -199,8 +253,14 @@ export default function ProductShowcase() {
                             fontSize: "10px",
                             color: m.active ? "#d6baff" : "#ccc3d4",
                             opacity: m.active ? 1 : 0.4,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
                           }}
                         >
+                          {m.active && (
+                            <span className="pulse-ring" style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#34d399" }} />
+                          )}
                           {m.time}
                         </span>
                       </div>
@@ -240,16 +300,26 @@ export default function ProductShowcase() {
                         strokeWidth="12"
                       />
                       <circle
+                        className={visible ? "animate-donut" : ""}
                         cx="64"
                         cy="64"
                         r="58"
                         fill="transparent"
-                        stroke="#b88cff"
+                        stroke="url(#donutGradient)"
                         strokeWidth="12"
                         strokeDasharray="364"
-                        strokeDashoffset="91"
+                        strokeDashoffset={visible ? "91" : "364"}
                         strokeLinecap="round"
+                        style={{
+                          filter: "drop-shadow(0 0 6px rgba(184,140,255,0.4))",
+                        }}
                       />
+                      <defs>
+                        <linearGradient id="donutGradient" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#b88cff" />
+                          <stop offset="100%" stopColor="#d6baff" />
+                        </linearGradient>
+                      </defs>
                     </svg>
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ fontSize: "24px", fontWeight: 700 }}>75%</span>
@@ -262,19 +332,22 @@ export default function ProductShowcase() {
                     {[
                       { label: "Focus Level", value: "High", pct: "90%" },
                       { label: "Retention", value: "82%", pct: "82%" },
-                    ].map((bar) => (
+                    ].map((bar, i) => (
                       <div key={bar.label}>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "4px" }}>
                           <span>{bar.label}</span>
                           <span style={{ color: "#d6baff" }}>{bar.value}</span>
                         </div>
-                        <div style={{ height: "4px", width: "100%", background: "rgba(255, 255, 255, 0.05)", borderRadius: "9999px" }}>
+                        <div style={{ height: "4px", width: "100%", background: "rgba(255, 255, 255, 0.05)", borderRadius: "9999px", overflow: "hidden" }}>
                           <div
+                            className={visible ? "animate-progress" : ""}
                             style={{
                               height: "100%",
-                              background: "#d6baff",
+                              background: "linear-gradient(90deg, #b88cff, #d6baff)",
                               borderRadius: "9999px",
-                              width: bar.pct,
+                              width: visible ? bar.pct : "0%",
+                              animationDelay: `${0.5 + i * 0.3}s`,
+                              boxShadow: "0 0 8px rgba(214,186,255,0.3)",
                             }}
                           />
                         </div>
@@ -295,7 +368,17 @@ export default function ProductShowcase() {
                     fontSize: "14px",
                     color: "#e2e1eb",
                     cursor: "pointer",
-                    transition: "background 0.2s",
+                    transition: "background 0.2s, border-color 0.3s, transform 0.3s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(214,186,255,0.1)";
+                    e.currentTarget.style.borderColor = "rgba(214,186,255,0.3)";
+                    e.currentTarget.style.transform = "scale(1.02)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.transform = "scale(1)";
                   }}
                 >
                   Generate Report

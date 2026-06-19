@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const features = [
   { icon: "smart_toy", title: "AI Tutor", description: "24/7 personalized tutor that understands every student's unique learning pace and vocabulary." },
@@ -13,16 +13,14 @@ const features = [
 
 export default function FeaturesGrid() {
   const ref = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const items = entry.target.querySelectorAll("[data-reveal]");
-            items.forEach((el, i) => {
-              setTimeout(() => el.classList.add("reveal-visible"), i * 80);
-            });
+            setVisible(true);
           }
         });
       },
@@ -38,15 +36,16 @@ export default function FeaturesGrid() {
       ref={ref}
       style={{ padding: "128px 32px", maxWidth: "1440px", margin: "0 auto" }}
     >
-      <style>{`
-        [data-reveal] { opacity: 0; transform: translateY(24px); transition: all 0.7s ease-out; }
-        [data-reveal].reveal-visible { opacity: 1; transform: translateY(0); }
-        .feature-card:hover { border-color: rgba(214,186,255,0.5) !important; }
-        .feature-card:hover .feature-icon { background: rgba(214,186,255,0.20) !important; }
-      `}</style>
-
       {/* Header */}
-      <div data-reveal style={{ textAlign: "center", marginBottom: "80px" }}>
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: "80px",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(30px)",
+          transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)",
+        }}
+      >
         <h2 style={{ fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, marginBottom: "16px", letterSpacing: "-0.01em" }}>
           Precision Engineering for Education
         </h2>
@@ -56,19 +55,18 @@ export default function FeaturesGrid() {
       </div>
 
       {/* Grid */}
-      <div
-        className="responsive-3-col-grid"
-      >
-        {features.map((f) => (
+      <div className="responsive-3-col-grid">
+        {features.map((f, i) => (
           <div
             key={f.title}
-            data-reveal
-            className="glass-card feature-card"
+            className="glass-card card-hover-lift"
             style={{
               padding: "32px",
               borderRadius: "16px",
               cursor: "default",
-              transition: "border-color 0.3s",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(40px)",
+              transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${i * 0.1}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${i * 0.1}s, box-shadow 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.3s ease`,
             }}
           >
             <div
@@ -82,7 +80,7 @@ export default function FeaturesGrid() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: "24px",
-                transition: "background 0.3s",
+                transition: "background 0.3s, transform 0.3s",
               }}
             >
               <span className="material-symbols-outlined" style={{ color: "#d6baff" }}>{f.icon}</span>
