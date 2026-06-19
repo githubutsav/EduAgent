@@ -1,199 +1,77 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import DisplayCards from "./ui/display-cards";
 
 export default function CtaSection() {
-  const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setVisible(true);
-        });
-      },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section
-      ref={ref}
-      style={{
-        padding: "128px 0",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(40px)",
-        transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1)",
-      }}
-    >
-      <div style={{ padding: "0 32px", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
-        <div
-          className={`glass-card ${visible ? "animate-breathing-glow" : ""}`}
-          style={{
-            borderRadius: "40px",
-            padding: "80px 24px",
-            textAlign: "center",
-            position: "relative",
-            overflow: "hidden",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-          }}
-        >
-          {/* Ambient glow */}
-          <div
-            className="animate-blob"
-            style={{
-              pointerEvents: "none",
-              position: "absolute",
-              inset: 0,
-              background: "rgba(214, 186, 255, 0.1)",
-              filter: "blur(100px)",
-              opacity: 0.5,
-            }}
+    <section className="py-32 px-6 relative z-10 overflow-hidden bg-[#0d0e13] border-t border-white/5">
+      {/* Background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
+
+      <div className="max-w-[1280px] mx-auto fade-up flex flex-col lg:flex-row items-center justify-between gap-16 relative z-10">
+        {/* Left: CTA Text */}
+        <div className="lg:w-1/2 text-center lg:text-left">
+          <h2 className="font-bold text-[48px] md:text-[64px] leading-[1.1] tracking-tight mb-10 text-white">
+            Ready to transform <br className="hidden md:block" /> your classroom?
+          </h2>
+          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-8">
+            <button className="px-10 py-4 rounded-full gradient-button text-[#090A0F] font-bold hover:scale-105 transition-transform shadow-[0_0_30px_rgba(168,85,247,0.3)] w-full sm:w-auto">
+              Join the Waitlist
+            </button>
+            <button className="px-10 py-4 rounded-full ghost-border text-on-surface font-bold hover:bg-white/5 transition-all w-full sm:w-auto">
+              Book a Live Demo
+            </button>
+          </div>
+          <p className="text-on-surface-variant text-sm tracking-wide">
+            Free for the first 100 schools in each state.
+          </p>
+        </div>
+
+        {/* Right: Display Cards */}
+        <div className="lg:w-1/2 w-full flex justify-center lg:justify-end relative h-[400px] items-center">
+          <DisplayCards
+            cards={[
+              {
+                icon: (
+                  <span className="material-symbols-outlined text-[#cfbcff] text-[20px]">
+                    auto_awesome
+                  </span>
+                ),
+                title: "AI Co-pilot",
+                description: "Always learning, always ready",
+                date: "Active",
+                titleClassName: "text-[#cfbcff]",
+                className:
+                  "[grid-area:stack] hover:-translate-y-10 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-[#0d0e13]/80 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0",
+              },
+              {
+                icon: (
+                  <span className="material-symbols-outlined text-[#ffb2ba] text-[20px]">
+                    insights
+                  </span>
+                ),
+                title: "Live Analytics",
+                description: "Real-time class engagement",
+                date: "Updating...",
+                titleClassName: "text-[#ffb2ba]",
+                className:
+                  "[grid-area:stack] translate-x-12 translate-y-10 hover:-translate-y-1 before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-[#0d0e13]/80 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0",
+              },
+              {
+                icon: (
+                  <span className="material-symbols-outlined text-[#ecc161] text-[20px]">
+                    psychology
+                  </span>
+                ),
+                title: "Adaptive Learning",
+                description: "Personalized paths for everyone",
+                date: "v2.4 Deployed",
+                titleClassName: "text-[#ecc161]",
+                className:
+                  "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
+              },
+            ]}
           />
-
-          {/* Orbit ring decorations */}
-          <div
-            className="animate-orbit"
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              width: "500px",
-              height: "500px",
-              marginTop: "-250px",
-              marginLeft: "-250px",
-              border: "1px solid rgba(214,186,255,0.06)",
-              borderRadius: "50%",
-              pointerEvents: "none",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "0",
-                left: "50%",
-                width: "6px",
-                height: "6px",
-                marginLeft: "-3px",
-                marginTop: "-3px",
-                background: "#d6baff",
-                borderRadius: "50%",
-                boxShadow: "0 0 10px rgba(214,186,255,0.5)",
-              }}
-            />
-          </div>
-          <div
-            className="animate-orbit"
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              width: "700px",
-              height: "700px",
-              marginTop: "-350px",
-              marginLeft: "-350px",
-              border: "1px solid rgba(214,186,255,0.03)",
-              borderRadius: "50%",
-              pointerEvents: "none",
-              animationDirection: "reverse",
-              animationDuration: "30s",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                bottom: "0",
-                left: "50%",
-                width: "4px",
-                height: "4px",
-                marginLeft: "-2px",
-                marginBottom: "-2px",
-                background: "#b88cff",
-                borderRadius: "50%",
-                boxShadow: "0 0 8px rgba(184,140,255,0.4)",
-              }}
-            />
-          </div>
-
-          <div style={{ position: "relative", zIndex: 10 }}>
-            <h2
-              style={{
-                fontSize: "clamp(2rem, 4vw, 3rem)",
-                fontWeight: 700,
-                marginBottom: "32px",
-                lineHeight: 1.2,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Ready to Optimize <br />
-              Your Learning Potential?
-            </h2>
-            <p
-              style={{
-                color: "#ccc3d4",
-                fontSize: "1.125rem",
-                marginBottom: "48px",
-                maxWidth: "36rem",
-                margin: "0 auto 48px auto",
-                lineHeight: 1.6,
-              }}
-            >
-              Join thousands of students and teachers who are already experiencing
-              the future of intelligence.
-            </p>
-            <div style={{ display: "flex", gap: "24px", justifyContent: "center", flexWrap: "wrap" }}>
-              <button
-                className="btn-shimmer"
-                style={{
-                  background: "#d6baff",
-                  color: "#410a83",
-                  border: "none",
-                  borderRadius: "16px",
-                  padding: "20px 40px",
-                  fontSize: "1.25rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: "0 10px 30px rgba(214,186,255,0.2)",
-                  transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.05)";
-                  e.currentTarget.style.boxShadow = "0 15px 40px rgba(214,186,255,0.35)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "0 10px 30px rgba(214,186,255,0.2)";
-                }}
-              >
-                Get Started for Free
-              </button>
-              <button
-                className="glass-card"
-                style={{
-                  borderRadius: "16px",
-                  padding: "20px 40px",
-                  color: "#e2e1eb",
-                  fontWeight: 600,
-                  fontSize: "1.125rem",
-                  cursor: "pointer",
-                  transition: "background 0.2s, transform 0.25s cubic-bezier(0.16,1,0.3,1), border-color 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.05)";
-                  e.currentTarget.style.borderColor = "rgba(214,186,255,0.3)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                }}
-              >
-                Book a Personalized Demo
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </section>

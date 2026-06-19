@@ -1,222 +1,91 @@
 "use client";
 
-import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
 
-const navLinks = [
-  { label: "Platform", href: "#", active: true },
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#showcase" },
-];
-
 export default function Navbar() {
-  const { user } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"login" | "signup">("login");
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const openModal = (tab: "login" | "signup") => {
-    setModalTab(tab);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
+  const openLogin = () => { setModalTab("login"); setModalOpen(true); };
 
   return (
     <>
-      <nav
-        style={{
-          position: "fixed",
-          top: 0,
-          width: "100%",
-          zIndex: 50,
-          borderBottom: `1px solid ${scrolled ? "rgba(74,68,82,0.3)" : "transparent"}`,
-          background: scrolled ? "rgba(8,8,11,0.75)" : "transparent",
-          backdropFilter: scrolled ? "blur(12px)" : "none",
-          transition: "all 0.3s",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 32px",
-            height: "80px",
-            maxWidth: "1440px",
-            margin: "0 auto",
-          }}
-        >
-          {/* Logo with Link and hover styling */}
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) => {
-              const icon = e.currentTarget.querySelector(".material-symbols-outlined");
-              if (icon) (icon as HTMLElement).style.transform = "rotate(15deg) scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-              const icon = e.currentTarget.querySelector(".material-symbols-outlined");
-              if (icon) (icon as HTMLElement).style.transform = "rotate(0deg) scale(1)";
-            }}
-          >
-            <span
-              className="material-symbols-outlined animate-sparkle"
-              style={{
-                color: "#d6baff",
-                fontSize: "28px",
-                fontVariationSettings: "'FILL' 1",
-                transition: "transform 0.3s",
-              }}
-            >
-              auto_awesome
-            </span>
-            <span style={{ fontSize: "1.375rem", fontWeight: 700, color: "#e2e1eb", letterSpacing: "-0.02em" }}>
-              MindHub AI
-            </span>
-          </Link>
-
-          {/* Nav Links with hover translations */}
-          <div style={{ display: "flex", alignItems: "center", gap: "32px" }}>
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                style={{
-                  fontSize: "0.875rem",
-                  color: link.active ? "#d6baff" : "#ccc3d4",
-                  fontWeight: link.active ? 600 : 400,
-                  textDecoration: "none",
-                  transition: "color 0.3s, transform 0.2s",
-                  display: "inline-block",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#d6baff";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = link.active ? "#d6baff" : "#ccc3d4";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* CTA containing Profile/Dashboard or Log In/Launch App */}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            {user ? (
-              <>
-                <Link
-                  href="/profile"
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#ccc3d4",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    transition: "color 0.3s, transform 0.2s",
-                    paddingRight: "12px",
-                    display: "inline-block",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "#d6baff";
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "#ccc3d4";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
+      <div className="fixed top-4 left-0 w-full z-50 flex justify-center px-4 pointer-events-none">
+        <nav className="w-full max-w-[1280px] backdrop-blur-xl border border-white/10 bg-[#121318]/80 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.5)] pointer-events-auto transition-all duration-300">
+          <div className="flex justify-between items-center h-16 px-6">
+            {/* Logo */}
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push("/")}>
+              <div className="w-8 h-8 rounded-lg gradient-button flex items-center justify-center group-hover:scale-105 transition-transform">
+                <span
+                  className="material-symbols-outlined text-white text-lg"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
                 >
-                  Profile
-                </Link>
-                <Link
-                  href="/dashboard"
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#d6baff",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    transition: "color 0.3s, transform 0.2s",
-                    paddingRight: "8px",
-                    display: "inline-block",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
+                  school
+                </span>
+              </div>
+              <span className="text-xl font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors">
+                EduAgent
+              </span>
+            </div>
+
+            {/* Nav Links */}
+            <div className="hidden md:flex items-center gap-8 pt-1">
+              {[
+                { label: "Vision", href: "#" },
+                { label: "Features", href: "#features" },
+                { label: "For India", href: "#" },
+                { label: "Experience", href: "#experience" },
+              ].map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="relative text-on-surface-variant hover:text-primary transition-colors text-sm uppercase tracking-widest group/link pb-2"
+                >
+                  {link.label}
+                  <span className="absolute left-0 bottom-0 w-full h-[2px] bg-primary scale-x-0 group-hover/link:scale-x-100 transition-transform origin-left" />
+                </a>
+              ))}
+            </div>
+
+            {/* CTA — auth-aware */}
+            {user ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="px-5 py-2 rounded-full text-sm font-semibold text-on-surface border border-white/10 hover:bg-white/5 transition-all"
                 >
                   Dashboard
-                </Link>
-              </>
+                </button>
+                <button
+                  onClick={() => logout()}
+                  className="px-5 py-2 rounded-full text-sm font-semibold text-on-surface-variant hover:text-white transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
             ) : (
-              <>
-                <button
-                  onClick={() => openModal("login")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#e2e1eb",
-                    fontSize: "0.875rem",
-                    cursor: "pointer",
-                    transition: "color 0.3s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d6baff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#e2e1eb")}
-                >
-                  Log In
-                </button>
-                <button
-                  onClick={() => openModal("signup")}
-                  className="btn-shimmer"
-                  style={{
-                    background: "#d6baff",
-                    color: "#410a83",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 24px",
-                    fontSize: "0.875rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    boxShadow: "0 0 15px rgba(214,186,255,0.4)",
-                    transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.06)";
-                    e.currentTarget.style.boxShadow = "0 0 25px rgba(214, 186, 255, 0.5)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.boxShadow = "0 0 15px rgba(214, 186, 255, 0.4)";
-                  }}
-                >
-                  Launch App
-                </button>
-              </>
+              <button
+                onClick={openLogin}
+                className="px-6 py-2 rounded-full gradient-button text-white font-bold text-sm uppercase tracking-widest hover:scale-105 transition-all duration-300 active:scale-95 shadow-[0_0_20px_rgba(160,124,254,0.4)]"
+              >
+                Get Started
+              </button>
             )}
           </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
 
-      <AuthModal isOpen={isModalOpen} onClose={closeModal} initialTab={modalTab} />
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        initialTab={modalTab}
+      />
     </>
   );
 }

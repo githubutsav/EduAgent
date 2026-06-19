@@ -3,35 +3,34 @@ import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "MindHub AI | Intelligence Optimized",
+  title: "EduAgent | Transforming Classrooms with AI",
   description:
-    "Empower educators with real-time classroom insights and personalized learning paths. MindHub AI bridges the gap between massive curriculum and individual potential.",
-  keywords: ["AI education", "adaptive learning", "classroom intelligence", "EdTech"],
+    "EduAgent handles the operational noise so you can focus on the human connection. Empowering teachers to lead classrooms with confidence and heart.",
+  keywords: ["AI education", "adaptive learning", "classroom intelligence", "EdTech", "EduAgent"],
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full scroll-smooth antialiased dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Google Fonts: Inter */}
+        {/* Google Fonts: Inter + Geist */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         />
-        {/* Material Symbols variable icon font */}
+        {/* Material Symbols variable icon font — full variable range */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         />
       </head>
-      <body className="grid-pattern min-h-screen antialiased">
+      <body className="min-h-full flex flex-col bg-background-deep text-on-surface font-sans overflow-x-hidden selection:bg-primary/30 selection:text-primary">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
 }
-

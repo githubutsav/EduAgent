@@ -84,12 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return profile;
       } else {
         // Mock authentication
-        await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate delay
-        
-        // Retrieve users from local registration database mock
+        await new Promise((resolve) => setTimeout(resolve, 800));
         const accountsData = localStorage.getItem("mindhub_demo_accounts");
         const accounts = accountsData ? JSON.parse(accountsData) : {};
-        
         if (accounts[email] && accounts[email].password === password) {
           const profile: UserProfile = {
             uid: accounts[email].uid,
@@ -104,7 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (accounts[email]) {
           throw new Error("auth/wrong-password");
         } else {
-          // If account doesn't exist, create a default demo session for convenience
           const mockName = email.split("@")[0];
           const profile: UserProfile = {
             uid: "demo-uid-" + Math.random().toString(36).substr(2, 9),
@@ -119,8 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error: any) {
-      setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -143,22 +140,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Mock Registration
         await new Promise((resolve) => setTimeout(resolve, 800));
-        
         const accountsData = localStorage.getItem("mindhub_demo_accounts");
         const accounts = accountsData ? JSON.parse(accountsData) : {};
-        
-        if (accounts[email]) {
-          throw new Error("auth/email-already-in-use");
-        }
-        
+        if (accounts[email]) throw new Error("auth/email-already-in-use");
         const uid = "demo-uid-" + Math.random().toString(36).substr(2, 9);
         accounts[email] = { password, name, uid };
         localStorage.setItem("mindhub_demo_accounts", JSON.stringify(accounts));
-        
         const profile: UserProfile = {
-          uid,
-          email,
-          displayName: name,
+          uid, email, displayName: name,
           photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
           isMock: true,
         };
@@ -167,8 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return profile;
       }
     } catch (error: any) {
-      setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -202,8 +192,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return profile;
       }
     } catch (error: any) {
-      setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 

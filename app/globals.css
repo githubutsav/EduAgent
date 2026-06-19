@@ -2,7 +2,8 @@
 
 /* ── Tailwind v4 theme — must be right after @import ─────────────── */
 @theme {
-  --color-background:               #08080B;
+  --color-background:               #121318;
+  --color-background-deep:          #090A0F;
   --color-surface:                  #12131a;
   --color-surface-dim:              #12131a;
   --color-surface-bright:           #383940;
@@ -11,20 +12,24 @@
   --color-surface-container:        #1e1f26;
   --color-surface-container-high:   #282a31;
   --color-surface-container-highest:#33343c;
-  --color-on-surface:               #e2e1eb;
-  --color-on-surface-variant:       #ccc3d4;
-  --color-outline:                  #968e9d;
-  --color-outline-variant:          #4a4452;
-  --color-primary:                  #d6baff;
-  --color-primary-container:        #b88cff;
-  --color-on-primary:               #410a83;
-  --color-on-primary-container:     #4a198c;
-  --color-secondary:                #dbb8ff;
-  --color-secondary-container:      #573878;
-  --color-on-secondary:             #3f2160;
-  --color-on-secondary-container:   #caa6ef;
+  --color-on-surface:               #e3e1e9;
+  --color-on-surface-variant:       #cbc3d5;
+  --color-outline:                  #948e9f;
+  --color-outline-variant:          #494453;
+  --color-primary:                  #cfbcff;
+  --color-primary-container:        #a07cfe;
+  --color-on-primary:               #3a0092;
+  --color-on-primary-container:     #350086;
+  --color-secondary:                #ffb2ba;
+  --color-on-secondary:             #630a22;
+  --color-secondary-container:      #822437;
+  --color-on-secondary-container:   #ff97a4;
+  --color-tertiary:                 #ecc161;
+  --color-on-tertiary:              #3f2e00;
+  --color-tertiary-container:       #b48d33;
 
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: var(--font-inter), 'Inter', sans-serif;
+  --font-geist: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   --spacing-margin-desktop:  32px;
   --spacing-margin-mobile:   16px;
@@ -34,6 +39,8 @@
   --radius-lg:      1rem;
   --radius-xl:      1.5rem;
   --radius-full:    9999px;
+
+  --animate-fade-up: fade-up 0.8s ease-out forwards;
 }
 
 /* ── LiveKit component overrides ─────────────────────────────────── */
@@ -66,9 +73,9 @@ html {
 }
 
 body {
-  background-color: #08080B;
-  color: #e2e1eb;
-  font-family: 'Inter', sans-serif;
+  background-color: #121318;
+  color: #e3e1e9;
+  font-family: var(--font-inter), 'Inter', sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -81,11 +88,58 @@ body {
 
 /* ── Glassmorphism card ───────────────────────────────────────────── */
 .glass-card {
-  background: rgba(20, 20, 25, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+  background-color: rgba(18, 19, 26, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Gradient button (legacy) ─────────────────────────────────────── */
+.gradient-button {
+  background: linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%);
+}
+
+/* ── Signature gradient text (legacy) ────────────────────────────── */
+.signature-gradient {
+  background-image: linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Ghost border (legacy) ────────────────────────────────────────── */
+.ghost-border {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Ambient glow blob (legacy) ───────────────────────────────────── */
+.ambient-glow {
+  filter: blur(120px);
+  opacity: 0.15;
+  background: radial-gradient(circle, #A07CFE 0%, transparent 70%);
+}
+
+/* ── Animate pulse soft (legacy) ──────────────────────────────────── */
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ── Float speed variants (legacy) ───────────────────────────────── */
+.animate-float-slow   { animation: float 6s ease-in-out infinite; }
+.animate-float-medium { animation: float 5s ease-in-out infinite; }
+.animate-float-fast   { animation: float 4s ease-in-out infinite; }
+
+/* ── Fade-up (legacy) ─────────────────────────────────────────────── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ── Glow utilities ───────────────────────────────────────────────── */
@@ -110,6 +164,17 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* ── Marquee for legacy testimonials (40s, slower) ────────────────── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee-slow {
+  display: flex;
+  width: max-content;
+  animation: marquee 40s linear infinite;
 }
 
 /* ── Scroll-reveal animation ──────────────────────────────────────── */
@@ -513,6 +578,22 @@ body {
 
 .animate-orbit {
   animation: orbit 20s linear infinite;
+}
+
+/* ── Legacy keyframes ─────────────────────────────────────────────── */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.95); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+@keyframes fade-up {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────── */
