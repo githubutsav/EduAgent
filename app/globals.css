@@ -226,3 +226,282 @@ body {
     grid-column: span 4 / span 4;
   }
 }
+
+
+/* ================================================================== */
+/*  ANIMATION SYSTEM                                                   */
+/* ================================================================== */
+
+/* ── Floating ambient blobs ───────────────────────────────────────── */
+@keyframes float-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%      { transform: translate(30px, -20px) scale(1.05); }
+  50%      { transform: translate(-15px, 15px) scale(0.97); }
+  75%      { transform: translate(20px, 10px) scale(1.03); }
+}
+
+.animate-blob {
+  animation: float-blob 8s ease-in-out infinite;
+}
+.animate-blob-delay {
+  animation: float-blob 10s ease-in-out 2s infinite;
+}
+
+/* ── Gradient shimmer for text ────────────────────────────────────── */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-text-animated {
+  background: linear-gradient(135deg, #ecdcff 0%, #b88cff 25%, #d6baff 50%, #9f6dff 75%, #ecdcff 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 4s ease-in-out infinite;
+}
+
+/* ── Fade-in-up with stagger support ──────────────────────────────── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stagger delays */
+.anim-delay-100 { animation-delay: 0.1s; }
+.anim-delay-200 { animation-delay: 0.2s; }
+.anim-delay-300 { animation-delay: 0.3s; }
+.anim-delay-400 { animation-delay: 0.4s; }
+.anim-delay-500 { animation-delay: 0.5s; }
+.anim-delay-600 { animation-delay: 0.6s; }
+.anim-delay-700 { animation-delay: 0.7s; }
+.anim-delay-800 { animation-delay: 0.8s; }
+
+/* ── Fade-in-right ────────────────────────────────────────────────── */
+@keyframes fade-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in-right {
+  opacity: 0;
+  animation: fade-in-right 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+
+/* ── Scale-in ─────────────────────────────────────────────────────── */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  opacity: 0;
+  animation: scale-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+/* ── Float (gentle hover effect for cards / mockups) ──────────────── */
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+.animate-float {
+  animation: gentle-float 6s ease-in-out infinite;
+}
+
+/* ── Pulse-ring (for live indicators, online status) ──────────────── */
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.pulse-ring {
+  position: relative;
+}
+.pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: inherit;
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── Breathing glow (CTA section) ─────────────────────────────────── */
+@keyframes breathing-glow {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(214, 186, 255, 0.15), 0 0 80px rgba(184, 140, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(214, 186, 255, 0.3), 0 0 120px rgba(184, 140, 255, 0.12);
+  }
+}
+
+.animate-breathing-glow {
+  animation: breathing-glow 3s ease-in-out infinite;
+}
+
+/* ── Shimmer sweep (button shine effect) ──────────────────────────── */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 70%
+  );
+  animation: shimmer-sweep 3s ease-in-out infinite;
+}
+
+/* ── Progress bar fill animation ──────────────────────────────────── */
+@keyframes progress-fill {
+  from { width: 0; }
+}
+
+.animate-progress {
+  animation: progress-fill 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Donut chart draw animation ───────────────────────────────────── */
+@keyframes donut-draw {
+  from { stroke-dashoffset: 364; }
+}
+
+.animate-donut {
+  animation: donut-draw 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Sparkle / twinkle for logo ───────────────────────────────────── */
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50%      { opacity: 0.7; transform: scale(1.15) rotate(8deg); }
+}
+
+.animate-sparkle:hover {
+  animation: sparkle 0.6s ease-in-out;
+}
+
+/* ── Card hover lift effect ───────────────────────────────────────── */
+.card-hover-lift {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px rgba(184, 140, 255, 0.12), 0 0 30px rgba(214, 186, 255, 0.06);
+  border-color: rgba(214, 186, 255, 0.5) !important;
+}
+.card-hover-lift:hover .feature-icon {
+  background: rgba(214, 186, 255, 0.20) !important;
+}
+
+/* ── Staggered data-reveal with intersection observer ─────────────── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-reveal].reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Marquee (trust logos / infinite scroll) ───────────────────────── */
+@keyframes marquee-left {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee-left 25s linear infinite;
+}
+
+/* ── Typewriter cursor ────────────────────────────────────────────── */
+@keyframes blink-caret {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+.typing-cursor::after {
+  content: '|';
+  color: #d6baff;
+  animation: blink-caret 1s step-end infinite;
+  margin-left: 2px;
+}
+
+/* ── Counter number reveal ────────────────────────────────────────── */
+@keyframes count-up-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-count {
+  animation: count-up-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* ── Particle / orbit ring for CTA ────────────────────────────────── */
+@keyframes orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-orbit {
+  animation: orbit 20s linear infinite;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

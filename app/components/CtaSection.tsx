@@ -1,37 +1,37 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function CtaSection() {
   const ref = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add("active");
+          if (entry.isIntersecting) setVisible(true);
         });
       },
       { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
     );
-    if (ref.current) {
-      observer.observe(ref.current);
-      ref.current.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-    }
+    if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
 
   return (
     <section
       ref={ref}
-      className="reveal"
       style={{
         padding: "128px 0",
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(40px)",
+        transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1)",
       }}
     >
       <div style={{ padding: "0 32px", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
         <div
-          className="glass-card"
+          className={`glass-card ${visible ? "animate-breathing-glow" : ""}`}
           style={{
             borderRadius: "40px",
             padding: "80px 24px",
@@ -43,6 +43,7 @@ export default function CtaSection() {
         >
           {/* Ambient glow */}
           <div
+            className="animate-blob"
             style={{
               pointerEvents: "none",
               position: "absolute",
@@ -52,6 +53,70 @@ export default function CtaSection() {
               opacity: 0.5,
             }}
           />
+
+          {/* Orbit ring decorations */}
+          <div
+            className="animate-orbit"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "500px",
+              height: "500px",
+              marginTop: "-250px",
+              marginLeft: "-250px",
+              border: "1px solid rgba(214,186,255,0.06)",
+              borderRadius: "50%",
+              pointerEvents: "none",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "0",
+                left: "50%",
+                width: "6px",
+                height: "6px",
+                marginLeft: "-3px",
+                marginTop: "-3px",
+                background: "#d6baff",
+                borderRadius: "50%",
+                boxShadow: "0 0 10px rgba(214,186,255,0.5)",
+              }}
+            />
+          </div>
+          <div
+            className="animate-orbit"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "700px",
+              height: "700px",
+              marginTop: "-350px",
+              marginLeft: "-350px",
+              border: "1px solid rgba(214,186,255,0.03)",
+              borderRadius: "50%",
+              pointerEvents: "none",
+              animationDirection: "reverse",
+              animationDuration: "30s",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                bottom: "0",
+                left: "50%",
+                width: "4px",
+                height: "4px",
+                marginLeft: "-2px",
+                marginBottom: "-2px",
+                background: "#b88cff",
+                borderRadius: "50%",
+                boxShadow: "0 0 8px rgba(184,140,255,0.4)",
+              }}
+            />
+          </div>
 
           <div style={{ position: "relative", zIndex: 10 }}>
             <h2
@@ -81,6 +146,7 @@ export default function CtaSection() {
             </p>
             <div style={{ display: "flex", gap: "24px", justifyContent: "center", flexWrap: "wrap" }}>
               <button
+                className="btn-shimmer"
                 style={{
                   background: "#d6baff",
                   color: "#410a83",
@@ -91,10 +157,16 @@ export default function CtaSection() {
                   fontWeight: 700,
                   cursor: "pointer",
                   boxShadow: "0 10px 30px rgba(214,186,255,0.2)",
-                  transition: "transform 0.15s",
+                  transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.boxShadow = "0 15px 40px rgba(214,186,255,0.35)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "0 10px 30px rgba(214,186,255,0.2)";
+                }}
               >
                 Get Started for Free
               </button>
@@ -107,7 +179,15 @@ export default function CtaSection() {
                   fontWeight: 600,
                   fontSize: "1.125rem",
                   cursor: "pointer",
-                  transition: "background 0.2s",
+                  transition: "background 0.2s, transform 0.25s cubic-bezier(0.16,1,0.3,1), border-color 0.3s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.borderColor = "rgba(214,186,255,0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
                 }}
               >
                 Book a Personalized Demo

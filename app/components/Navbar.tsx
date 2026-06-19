@@ -12,7 +12,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"login" | "signup">("login");
@@ -57,11 +57,33 @@ export default function Navbar() {
             margin: "0 auto",
           }}
         >
-          {/* Logo */}
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
+          {/* Logo with Link and hover styling */}
+          <Link
+            href="/"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              const icon = e.currentTarget.querySelector(".material-symbols-outlined");
+              if (icon) (icon as HTMLElement).style.transform = "rotate(15deg) scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              const icon = e.currentTarget.querySelector(".material-symbols-outlined");
+              if (icon) (icon as HTMLElement).style.transform = "rotate(0deg) scale(1)";
+            }}
+          >
             <span
-              className="material-symbols-outlined"
-              style={{ color: "#d6baff", fontSize: "28px", fontVariationSettings: "'FILL' 1" }}
+              className="material-symbols-outlined animate-sparkle"
+              style={{
+                color: "#d6baff",
+                fontSize: "28px",
+                fontVariationSettings: "'FILL' 1",
+                transition: "transform 0.3s",
+              }}
             >
               auto_awesome
             </span>
@@ -70,7 +92,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Nav Links */}
+          {/* Nav Links with hover translations */}
           <div style={{ display: "flex", alignItems: "center", gap: "32px" }}>
             {navLinks.map((link) => (
               <Link
@@ -81,7 +103,16 @@ export default function Navbar() {
                   color: link.active ? "#d6baff" : "#ccc3d4",
                   fontWeight: link.active ? 600 : 400,
                   textDecoration: "none",
-                  transition: "color 0.2s",
+                  transition: "color 0.3s, transform 0.2s",
+                  display: "inline-block",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#d6baff";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = link.active ? "#d6baff" : "#ccc3d4";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
                 {link.label}
@@ -89,10 +120,32 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* CTA */}
+          {/* CTA containing Profile/Dashboard or Log In/Launch App */}
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             {user ? (
               <>
+                <Link
+                  href="/profile"
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#ccc3d4",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    transition: "color 0.3s, transform 0.2s",
+                    paddingRight: "12px",
+                    display: "inline-block",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#d6baff";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "#ccc3d4";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  Profile
+                </Link>
                 <Link
                   href="/dashboard"
                   style={{
@@ -100,30 +153,19 @@ export default function Navbar() {
                     color: "#d6baff",
                     fontWeight: 600,
                     textDecoration: "none",
-                    transition: "color 0.2s",
+                    transition: "color 0.3s, transform 0.2s",
                     paddingRight: "8px",
+                    display: "inline-block",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
                   Dashboard
                 </Link>
-                <button
-                  onClick={logout}
-                  style={{
-                    background: "rgba(255, 255, 255, 0.04)",
-                    color: "#e2e1eb",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
-                    borderRadius: "8px",
-                    padding: "10px 20px",
-                    fontSize: "0.875rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)")}
-                >
-                  Sign Out
-                </button>
               </>
             ) : (
               <>
@@ -135,13 +177,16 @@ export default function Navbar() {
                     color: "#e2e1eb",
                     fontSize: "0.875rem",
                     cursor: "pointer",
-                    transition: "color 0.2s",
+                    transition: "color 0.3s",
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d6baff")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#e2e1eb")}
                 >
                   Log In
                 </button>
                 <button
                   onClick={() => openModal("signup")}
+                  className="btn-shimmer"
                   style={{
                     background: "#d6baff",
                     color: "#410a83",
@@ -152,10 +197,16 @@ export default function Navbar() {
                     fontWeight: 600,
                     cursor: "pointer",
                     boxShadow: "0 0 15px rgba(214,186,255,0.4)",
-                    transition: "transform 0.15s",
+                    transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.06)";
+                    e.currentTarget.style.boxShadow = "0 0 25px rgba(214, 186, 255, 0.5)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.boxShadow = "0 0 15px rgba(214, 186, 255, 0.4)";
+                  }}
                 >
                   Launch App
                 </button>
