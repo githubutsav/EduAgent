@@ -36,6 +36,24 @@
   --radius-full:    9999px;
 }
 
+/* ── LiveKit component overrides ─────────────────────────────────── */
+/* Tailwind v4 preflight sets svg to display:block which breaks      */
+/* LiveKit button icons, and constrains video dimensions. Undo those */
+/* resets inside LiveKit's scoped containers.                        */
+[data-lk-theme] svg,
+.lk-room-container svg {
+  display: inline;
+}
+[data-lk-theme] video,
+.lk-room-container video {
+  max-width: none;
+  height: 100%;
+}
+[data-lk-theme] img,
+.lk-room-container img {
+  display: inline;
+}
+
 /* ── Base Reset ───────────────────────────────────────────────────── */
 *,
 *::before,

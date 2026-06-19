@@ -1,7 +1,18 @@
 "use client";
 
-import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
+import {
+  LiveKitRoom,
+  GridLayout,
+  ParticipantTile,
+  RoomAudioRenderer,
+  ControlBar,
+  useTracks,
+  LayoutContextProvider,
+  Chat,
+} from "@livekit/components-react";
 import "@livekit/components-styles";
+import { Track } from "livekit-client";
+import { useCallback } from "react";
 
 interface VideoRoomProps {
   token: string;
@@ -9,7 +20,42 @@ interface VideoRoomProps {
   onLeave: () => void;
 }
 
+function StageArea() {
+  const tracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { onlySubscribed: false }
+  );
+
+  return (
+    <GridLayout
+      tracks={tracks}
+      style={{ height: "calc(100vh - var(--lk-control-bar-height))" }}
+    >
+      <ParticipantTile />
+    </GridLayout>
+  );
+}
+
 export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
+  const handleDeviceError = useCallback(
+    (error: { source: Track.Source; error: Error }) => {
+      console.error(
+        `[LiveKit] Device error for ${error.source}:`,
+        error.error.name,
+        error.error.message
+      );
+      if (error.source === Track.Source.Camera) {
+        alert(
+          `Camera error: ${error.error.message}\n\nPossible causes:\n• No camera connected\n• Camera is in use by another app\n• Browser blocked camera access`
+        );
+      }
+    },
+    []
+  );
+
   if (!token || !url) {
     return (
       <div
@@ -45,8 +91,8 @@ export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
       }}
     >
       <LiveKitRoom
-        video={true}
-        audio={true}
+        video={false}
+        audio={false}
         token={token}
         serverUrl={url}
         onDisconnected={onLeave}
@@ -54,7 +100,18 @@ export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
         data-lk-theme="default"
         style={{ height: "100%" }}
       >
-        <VideoConference />
+        <LayoutContextProvider>
+          <div className="lk-video-conference">
+            <div className="lk-video-conference-inner">
+              <StageArea />
+              <ControlBar
+                variation="verbose"
+                onDeviceError={handleDeviceError}
+              />
+            </div>
+            <Chat />
+          </div>
+        </LayoutContextProvider>
         <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
