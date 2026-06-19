@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { db } from "../../Firebaseconfig";
+import { doc, setDoc } from "firebase/firestore";
+
 
 interface Student {
   name: string;
@@ -34,6 +37,55 @@ export default function Dashboard() {
 
   // Active student selection state
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(mockStudents[0]);
+
+  // LiveKit Call State
+  const [joinRoomId, setJoinRoomId] = useState("");
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+
+  const handleCreateClassroom = async () => {
+    if (!user) return;
+    setIsCreatingRoom(true);
+    
+    const randomSlug = Math.random().toString(36).substring(2, 7);
+    const newRoomId = `classroom-${randomSlug}`;
+
+    try {
+      if (db) {
+        const roomRef = doc(db, "classrooms", newRoomId);
+        await setDoc(roomRef, {
+          roomId: newRoomId,
+          createdBy: user.uid,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          creatorName: user.displayName || "Educator",
+        });
+      } else {
+        const savedRooms = localStorage.getItem("mindhub_demo_rooms");
+        const rooms = savedRooms ? JSON.parse(savedRooms) : {};
+        rooms[newRoomId] = {
+          roomId: newRoomId,
+          createdBy: user.uid,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          creatorName: user.displayName || "Educator",
+        };
+        localStorage.setItem("mindhub_demo_rooms", JSON.stringify(rooms));
+      }
+
+      router.push(`/classroom/${newRoomId}`);
+    } catch (error) {
+      console.error("Failed to create room:", error);
+      alert("Error creating call room: " + (error as Error).message);
+    } finally {
+      setIsCreatingRoom(false);
+    }
+  };
+
+  const handleJoinClassroom = () => {
+    if (!joinRoomId.trim()) return;
+    router.push(`/classroom/${joinRoomId.trim().toLowerCase()}`);
+  };
+
 
   // Protect route client-side
   useEffect(() => {
@@ -313,6 +365,133 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+
+      {/* Live Video Classroom Widget */}
+      <div
+        className="glass-card"
+        style={{
+          borderRadius: "16px",
+          padding: "24px 32px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "20px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "48px",
+              height: "48px",
+              borderRadius: "12px",
+              background: "rgba(214, 186, 255, 0.1)",
+              color: "#d6baff",
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "28px" }}>
+              video_chat
+            </span>
+          </div>
+          <div>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#e2e1eb", margin: 0 }}>
+              Live AI Video Classroom
+            </h3>
+            <p style={{ fontSize: "0.85rem", color: "#ccc3d4", margin: "4px 0 0 0" }}>
+              Launch or join a high-fidelity video stream with students to review AI-generated curriculums in real-time.
+            </p>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <span
+              className="material-symbols-outlined"
+              style={{
+                position: "absolute",
+                left: "12px",
+                fontSize: "18px",
+                color: "#968e9d",
+              }}
+            >
+              key
+            </span>
+            <input
+              type="text"
+              placeholder="Enter Room Code (e.g. math-101)"
+              value={joinRoomId}
+              onChange={(e) => setJoinRoomId(e.target.value)}
+              style={{
+                padding: "10px 16px 10px 38px",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                color: "#e2e1eb",
+                fontSize: "0.875rem",
+                outline: "none",
+                width: "220px",
+              }}
+            />
+          </div>
+          <button
+            onClick={handleJoinClassroom}
+            disabled={!joinRoomId.trim()}
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              color: "#e2e1eb",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              padding: "10px 20px",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: !joinRoomId.trim() ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+              opacity: !joinRoomId.trim() ? 0.6 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (joinRoomId.trim()) e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+            }}
+            onMouseLeave={(e) => {
+              if (joinRoomId.trim()) e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+            }}
+          >
+            Join Room
+          </button>
+          <div style={{ height: "24px", width: "1px", background: "rgba(255, 255, 255, 0.1)" }} />
+          <button
+            onClick={handleCreateClassroom}
+            disabled={isCreatingRoom}
+            style={{
+              background: "#d6baff",
+              color: "#410a83",
+              border: "none",
+              borderRadius: "8px",
+              padding: "10px 20px",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: isCreatingRoom ? "not-allowed" : "pointer",
+              boxShadow: "0 0 15px rgba(214,186,255,0.25)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              transition: "transform 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (!isCreatingRoom) e.currentTarget.style.transform = "scale(0.98)";
+            }}
+            onMouseLeave={(e) => {
+              if (!isCreatingRoom) e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+              add_box
+            </span>
+            {isCreatingRoom ? "Creating..." : "Create Live Room"}
+          </button>
+        </div>
+      </div>
 
         {/* Stats Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
