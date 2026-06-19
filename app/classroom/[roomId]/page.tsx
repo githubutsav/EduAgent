@@ -7,6 +7,159 @@ import { db } from "../../../Firebaseconfig";
 import { doc, getDoc } from "firebase/firestore";
 import VideoRoom from "../../components/VideoRoom";
 
+interface ShareBarProps {
+  roomId: string;
+  role: "teacher" | "student";
+}
+
+function ShareBar({ roomId, role }: ShareBarProps) {
+  const [copied, setCopied] = useState(false);
+  const router = useRouter();
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(roomId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "12px 24px",
+        background: "rgba(13, 13, 18, 0.75)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        color: "#e2e1eb",
+        fontFamily: "Inter, sans-serif",
+        zIndex: 50,
+      }}
+    >
+      {/* Left section: Back to Dashboard & Status */}
+      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <button
+          onClick={() => router.push("/dashboard")}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#ccc3d4",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            cursor: "pointer",
+            transition: "color 0.2s",
+            padding: "4px 8px",
+            borderRadius: "6px",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#ffffff";
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#ccc3d4";
+            e.currentTarget.style.background = "none";
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+            arrow_back
+          </span>
+          Dashboard
+        </button>
+
+        <div
+          style={{
+            width: "1px",
+            height: "20px",
+            backgroundColor: "rgba(255, 255, 255, 0.15)",
+          }}
+        />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              backgroundColor: "#22c55e",
+              boxShadow: "0 0 8px #22c55e",
+              display: "inline-block",
+            }}
+          />
+          <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#ffffff" }}>
+            Live Classroom
+          </span>
+        </div>
+      </div>
+
+      {/* Right section: Classroom Room Code & Copy Button */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <span
+          style={{
+            fontSize: "0.825rem",
+            color: "#968e9d",
+          }}
+        >
+          Room Code:
+        </span>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            background: "rgba(0, 0, 0, 0.3)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: "8px",
+            padding: "4px 4px 4px 12px",
+            gap: "12px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "0.875rem",
+              color: "#d6baff",
+              fontFamily: "monospace",
+              fontWeight: 600,
+              userSelect: "all",
+            }}
+          >
+            {roomId}
+          </span>
+          <button
+            onClick={handleCopy}
+            style={{
+              background: copied ? "#22c55e" : "#d6baff",
+              color: copied ? "#ffffff" : "#410a83",
+              border: "none",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+              {copied ? "check" : "content_copy"}
+            </span>
+            {copied ? "Copied!" : "Copy Code"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClassroomPage() {
   const params = useParams();
   const roomId = params.roomId as string;
@@ -207,12 +360,17 @@ export default function ClassroomPage() {
     );
   }
 
-  // Render VideoRoom Component
+  // Render VideoRoom Component with Share Bar
   return (
-    <VideoRoom
-      token={token || ""}
-      url={livekitUrl || ""}
-      onLeave={() => router.push("/dashboard")}
-    />
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#08080B" }}>
+      <ShareBar roomId={roomId} role={role} />
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <VideoRoom
+          token={token || ""}
+          url={livekitUrl || ""}
+          onLeave={() => router.push("/dashboard")}
+        />
+      </div>
+    </div>
   );
 }
