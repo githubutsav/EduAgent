@@ -1,34 +1,62 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 const stats = [
-  { value: "10k+", label: "Active Students", delay: 0 },
-  { value: "40%", label: "Workload Reduction", delay: 100 },
-  { value: "98%", label: "Retention Rate", delay: 200 },
-  { value: "500+", label: "Partner Schools", delay: 300 },
+  { target: 10, suffix: "k+", label: "Active Students" },
+  { target: 40, suffix: "%", label: "Workload Reduction" },
+  { target: 98, suffix: "%", label: "Retention Rate" },
+  { target: 500, suffix: "+", label: "Partner Schools" },
 ];
+
+function AnimatedCounter({ target, suffix, started }: { target: number; suffix: string; started: boolean }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!started) return;
+    const duration = 2000; // ms
+    const steps = 60;
+    const increment = target / steps;
+    let current = 0;
+    const interval = duration / steps;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [started, target]);
+
+  return <>{started ? count : 0}{suffix}</>;
+}
 
 export default function TrustSection() {
   const ref = useRef<HTMLElement>(null);
+  const [started, setStarted] = useState(false);
+
+  const handleIntersect = useCallback((entries: IntersectionObserverEntry[]) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && !started) {
+        setStarted(true);
+        const items = ref.current?.querySelectorAll("[data-reveal]");
+        items?.forEach((el, i) => {
+          setTimeout(() => el.classList.add("reveal-visible"), i * 150);
+        });
+      }
+    });
+  }, [started]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const items = ref.current?.querySelectorAll("[data-reveal]");
-            items?.forEach((el, i) => {
-              setTimeout(() => el.classList.add("reveal-visible"), i * 100);
-            });
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
+    const observer = new IntersectionObserver(handleIntersect, { threshold: 0.2 });
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [handleIntersect]);
 
   return (
     <section
@@ -39,10 +67,6 @@ export default function TrustSection() {
         borderBottom: "1px solid rgba(74,68,82,0.1)",
       }}
     >
-      <style>{`
-        [data-reveal] { opacity: 0; transform: translateY(20px); transition: all 0.7s ease-out; }
-        [data-reveal].reveal-visible { opacity: 1; transform: translateY(0); }
-      `}</style>
       <div
         style={{
           maxWidth: "1440px",
@@ -56,10 +80,16 @@ export default function TrustSection() {
           <div
             key={stat.label}
             data-reveal
-            style={{ textAlign: "center" }}
+            style={{
+              textAlign: "center",
+              transition: "transform 0.3s ease",
+              cursor: "default",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
             <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "#d6baff", marginBottom: "8px" }}>
-              {stat.value}
+              <AnimatedCounter target={stat.target} suffix={stat.suffix} started={started} />
             </div>
             <p style={{ color: "#ccc3d4", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
               {stat.label}
