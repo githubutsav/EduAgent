@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
+import SignoutConfirmModal from "./SignoutConfirmModal";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"login" | "signup">("login");
+  const [confirmSignoutOpen, setConfirmSignoutOpen] = useState(false);
 
   const openLogin = () => { setModalTab("login"); setModalOpen(true); };
 
@@ -58,7 +60,7 @@ export default function Navbar() {
                   Dashboard
                 </button>
                 <button
-                  onClick={() => logout()}
+                  onClick={() => setConfirmSignoutOpen(true)}
                   className="px-5 py-2 rounded-full text-sm font-semibold text-on-surface-variant hover:text-white transition-colors"
                 >
                   Sign Out
@@ -81,6 +83,16 @@ export default function Navbar() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         initialTab={modalTab}
+      />
+
+      {/* Sign Out Confirmation Modal */}
+      <SignoutConfirmModal
+        isOpen={confirmSignoutOpen}
+        onClose={() => setConfirmSignoutOpen(false)}
+        onConfirm={async () => {
+          setConfirmSignoutOpen(false);
+          await logout();
+        }}
       />
     </>
   );

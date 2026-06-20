@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import SignoutConfirmModal from "./SignoutConfirmModal";
 
 export default function DashboardNav() {
   const { user, logout, isDemoMode } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [confirmSignoutOpen, setConfirmSignoutOpen] = useState(false);
 
   const navLinks = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
@@ -15,7 +18,8 @@ export default function DashboardNav() {
   ];
 
   return (
-    <header
+    <>
+      <header
       style={{
         position: "sticky",
         top: 0,
@@ -151,7 +155,7 @@ export default function DashboardNav() {
 
           {/* Sign Out */}
           <button
-            onClick={() => { logout(); router.push("/"); }}
+            onClick={() => setConfirmSignoutOpen(true)}
             style={{
               background: "rgba(239, 68, 68, 0.05)",
               color: "#f87171",
@@ -174,6 +178,16 @@ export default function DashboardNav() {
           </button>
         </div>
       </div>
-    </header>
+      </header>
+      <SignoutConfirmModal
+        isOpen={confirmSignoutOpen}
+        onClose={() => setConfirmSignoutOpen(false)}
+        onConfirm={async () => {
+          setConfirmSignoutOpen(false);
+          await logout();
+          router.push("/");
+        }}
+      />
+    </>
   );
 }

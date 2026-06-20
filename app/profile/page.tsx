@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import DashboardNav from "../components/DashboardNav";
 import PageLoader from "../components/PageLoader";
+import SignoutConfirmModal from "../components/SignoutConfirmModal";
 
 import { getStudentClassrooms, Classroom } from "../../lib/firestore";
 
@@ -67,6 +68,7 @@ export default function Profile() {
   const router = useRouter();
   const [selectedMeeting, setSelectedMeeting] = useState<PastMeeting | null>(mockPastMeetings[0]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [confirmSignoutOpen, setConfirmSignoutOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push("/");
@@ -128,7 +130,7 @@ export default function Profile() {
               {user.email}
             </p>
             <button
-              onClick={() => { logout(); router.push("/"); }}
+              onClick={() => setConfirmSignoutOpen(true)}
               style={{ marginTop: "16px", background: "rgba(239,68,68,0.08)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "8px", padding: "8px 16px", fontSize: "0.825rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s", width: "fit-content" }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.15)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
@@ -313,6 +315,16 @@ export default function Profile() {
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "20px 32px", textAlign: "center", marginTop: "auto" }}>
         <span style={{ fontSize: "0.72rem", color: "#948e9f" }}>© 2026 EduAgent AI. All rights reserved.</span>
       </footer>
+
+      <SignoutConfirmModal
+        isOpen={confirmSignoutOpen}
+        onClose={() => setConfirmSignoutOpen(false)}
+        onConfirm={async () => {
+          setConfirmSignoutOpen(false);
+          await logout();
+          router.push("/");
+        }}
+      />
     </div>
   );
 }
