@@ -119,7 +119,7 @@ export async function joinClassroom(roomCode: string, studentId: string): Promis
     students: arrayUnion(studentId)
   });
 
-  return { ...classData, students: [...classData.students, studentId] };
+  return { ...classData, id: classDoc.id, students: [...(classData.students || []), studentId] };
 }
 
 /**
@@ -131,7 +131,7 @@ export async function getTeacherClassrooms(teacherId: string): Promise<Classroom
   const q = query(collection(db, "classrooms"), where("teacherId", "==", teacherId));
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map(doc => doc.data() as Classroom).sort((a, b) => {
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Classroom)).sort((a, b) => {
     const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
     const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
     return timeB - timeA;
@@ -156,7 +156,7 @@ export async function getStudentClassrooms(studentId: string): Promise<Classroom
   const q = query(collection(db, "classrooms"), where("students", "array-contains", studentId));
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map(doc => doc.data() as Classroom);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Classroom));
 }
 
 /**
