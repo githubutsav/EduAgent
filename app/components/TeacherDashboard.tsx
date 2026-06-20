@@ -70,16 +70,39 @@ export default function TeacherDashboard() {
 
   const handleGeneratePlan = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!focusArea.trim() || isGenerating) return;
     setIsGenerating(true);
-    setGeneratedPlan(null);
-    await new Promise((r) => setTimeout(r, 2000));
-    const plans: Record<string, string> = {
-      Mathematics: `### AI Adaptive Curriculum: Mathematics\n**Focus Area:** ${focusArea}\n**Recommended Actions:**\n1. **Interactive Sandbox:** Launch the visual quadratic resolver for spatial thinkers.\n2. **Scaffolded Practice:** Assign 5 foundational polynomial equations with step-by-step hints.\n3. **Adaptive Quiz:** Dynamically scale difficulty from Level 2 to Level 4 based on response latency.\n*Estimated Engagement Boost:* **+14%**`,
-      Science: `### AI Adaptive Curriculum: Science\n**Focus Area:** ${focusArea}\n**Recommended Actions:**\n1. **Interactive Simulation:** Assign the virtual molecule assembler to explore covalent bonding.\n2. **Concept Anchoring:** Short 2-minute video overview on atomic forces, then active recall prompts.\n3. **Peer Collaboration:** Auto-group students into micro-channels of 3 for the state transition puzzle.\n*Estimated Engagement Boost:* **+18%**`,
-      Literature: `### AI Adaptive Curriculum: Literature\n**Focus Area:** ${focusArea}\n**Recommended Actions:**\n1. **Comparative Analysis:** Contrast modern themes with historical articles using AI highlighter.\n2. **Vocabulary Scaffold:** Auto-translate advanced terms to simplified contextual synonyms.\n3. **Synthesis Prompt:** Write a 100-word perspective summary; AI provides tone feedback.\n*Estimated Engagement Boost:* **+12%**`,
-    };
-    setGeneratedPlan(plans[subject] || `### AI Adaptive Curriculum: Customized\n**Focus Area:** ${focusArea}\n**Recommended Actions:**\n1. **Targeted Assessment:** Diagnostic quizzes targeting conceptual weak points.\n2. **Differentiated Reading:** Adjust to individual reading comprehension levels.\n3. **Real-time Intervention:** Notify instructor for 1-on-1 tutoring sync.\n*Estimated Engagement Boost:* **+15%**`);
-    setIsGenerating(false);
+    setGeneratedPlan("");
+
+    try {
+      const prompt = `You are an expert AI curriculum planner. A teacher wants an adaptive curriculum for ${subject}. 
+      The focus area is: ${focusArea}. 
+      Provide a brief, actionable 3-step recommendation plan. Estimate an engagement boost percentage. Use Markdown format. Keep it extremely concise.`;
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
+      });
+
+      if (!res.ok) throw new Error("Failed to generate plan");
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) return;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        setGeneratedPlan(prev => (prev || "") + chunk);
+      }
+    } catch (error) {
+      console.error(error);
+      setGeneratedPlan("⚠️ Failed to generate curriculum. Please check your AI API keys.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   /* ─── Shared button styles ─────────────────────────────────────── */

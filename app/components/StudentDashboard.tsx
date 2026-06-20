@@ -80,18 +80,51 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleChatSubmit = (e: React.FormEvent) => {
+  const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || isTyping) return;
     
-    setMessages(prev => [...prev, { role: 'user', text: chatInput }]);
+    const userMsg = chatInput;
     setChatInput("");
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setIsTyping(true);
     
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'ai', text: "I can help with that! Let me break it down for you..." }]);
+    try {
+      const apiMessages = [...messages, { role: 'user', text: userMsg }].map(m => ({
+        role: m.role === 'ai' ? 'assistant' : 'user',
+        content: m.text
+      }));
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages })
+      });
+
+      if (!res.ok) throw new Error("Failed to send message");
+
+      setMessages(prev => [...prev, { role: 'ai', text: "" }]); // Add empty AI message to stream into
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) return;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1].text += chunk;
+          return newMsgs;
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'ai', text: "Sorry, I'm having trouble connecting right now." }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const primaryBtn: React.CSSProperties = {
