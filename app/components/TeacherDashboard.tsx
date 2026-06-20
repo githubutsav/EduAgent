@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClassroom, getTeacherClassrooms, getTeacherStudentsAnalytics, Classroom } from "../../lib/firestore";
+import { createClassroom, getTeacherClassrooms, getTeacherStudentsAnalytics, Classroom, getClassroomQuizzes, Quiz, updateClassroomQuiz, QuizQuestion } from "../../lib/firestore";
 import DashboardNav from "../components/DashboardNav";
 import PageLoader from "../components/PageLoader";
 
@@ -35,6 +35,15 @@ export default function TeacherDashboard() {
   
   // Quiz Creation States
   const [selectedClassroomForQuiz, setSelectedClassroomForQuiz] = useState<Classroom | null>(null);
+  const [quizzesMap, setQuizzesMap] = useState<Record<string, Quiz[]>>({});
+  const [activeViewQuiz, setActiveViewQuiz] = useState<Quiz | null>(null);
+  
+  // Quiz Editing States
+  const [isEditingQuiz, setIsEditingQuiz] = useState(false);
+  const [editingQuizTitle, setEditingQuizTitle] = useState("");
+  const [editingQuestions, setEditingQuestions] = useState<QuizQuestion[]>([]);
+  const [isSavingQuiz, setIsSavingQuiz] = useState(false);
+  const [editingError, setEditingError] = useState("");
 
   useEffect(() => {
     if (!loading && !user) router.push("/");
@@ -49,6 +58,16 @@ export default function TeacherDashboard() {
       }).catch(console.error);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (classrooms.length > 0) {
+      classrooms.forEach(c => {
+        getClassroomQuizzes(c.id).then(quizzes => {
+          setQuizzesMap(prev => ({ ...prev, [c.id]: quizzes }));
+        }).catch(console.error);
+      });
+    }
+  }, [classrooms]);
 
   useEffect(() => {
     if (classrooms.length > 0 && !selectedClassroomForQuiz) {
@@ -148,6 +167,97 @@ export default function TeacherDashboard() {
     }
   };
 
+  /* ─── Quiz Editing Handlers ───────────────────────────────────── */
+  const handleUpdateQuestionText = (index: number, val: string) => {
+    const updated = [...editingQuestions];
+    updated[index].question = val;
+    setEditingQuestions(updated);
+  };
+
+  const handleUpdateOption = (qIndex: number, optIndex: number, val: string) => {
+    const updated = [...editingQuestions];
+    const oldVal = updated[qIndex].options[optIndex];
+    updated[qIndex].options[optIndex] = val;
+    if (updated[qIndex].correctAnswer === oldVal) {
+      updated[qIndex].correctAnswer = val;
+    }
+    setEditingQuestions(updated);
+  };
+
+  const handleUpdateCorrectAnswer = (qIndex: number, val: string) => {
+    const updated = [...editingQuestions];
+    updated[qIndex].correctAnswer = val;
+    setEditingQuestions(updated);
+  };
+
+  const handleAddQuestionToQuiz = () => {
+    setEditingQuestions([
+      ...editingQuestions,
+      { question: "", options: ["", "", "", ""], correctAnswer: "" }
+    ]);
+  };
+
+  const handleRemoveQuestionFromQuiz = (index: number) => {
+    if (editingQuestions.length === 1) return;
+    setEditingQuestions(editingQuestions.filter((_, i) => i !== index));
+  };
+
+  const handleSaveQuizEdit = async () => {
+    if (!activeViewQuiz) return;
+    setEditingError("");
+    
+    if (!editingQuizTitle.trim()) {
+      setEditingError("Quiz Title cannot be empty.");
+      return;
+    }
+
+    for (let i = 0; i < editingQuestions.length; i++) {
+      const q = editingQuestions[i];
+      if (!q.question.trim()) {
+        setEditingError(`Question ${i + 1} text cannot be empty.`);
+        return;
+      }
+      for (let o = 0; o < 4; o++) {
+        if (!q.options[o].trim()) {
+          setEditingError(`Option ${o + 1} for Question ${i + 1} cannot be empty.`);
+          return;
+        }
+      }
+      if (!q.correctAnswer) {
+        setEditingError(`Please select the correct answer for Question ${i + 1}.`);
+        return;
+      }
+    }
+
+    setIsSavingQuiz(true);
+    try {
+      await updateClassroomQuiz(activeViewQuiz.roomId, activeViewQuiz.id!, editingQuizTitle.trim(), editingQuestions);
+      
+      const updatedQuiz = {
+        ...activeViewQuiz,
+        title: editingQuizTitle.trim(),
+        questions: editingQuestions
+      };
+      
+      const classroom = classrooms.find(c => c.roomCode === activeViewQuiz.roomId);
+      if (classroom) {
+        setQuizzesMap(prev => {
+          const classroomQuizzes = prev[classroom.id] || [];
+          const updatedList = classroomQuizzes.map(q => q.id === activeViewQuiz.id ? updatedQuiz : q);
+          return { ...prev, [classroom.id]: updatedList };
+        });
+      }
+      
+      setActiveViewQuiz(updatedQuiz);
+      setIsEditingQuiz(false);
+    } catch (err: any) {
+      console.error(err);
+      setEditingError(err.message || "Failed to save quiz changes.");
+    } finally {
+      setIsSavingQuiz(false);
+    }
+  };
+
   /* ─── Shared button styles ─────────────────────────────────────── */
   const primaryBtn: React.CSSProperties = {
     background: "linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%)",
@@ -231,33 +341,68 @@ export default function TeacherDashboard() {
                   <button onClick={() => router.push(`/classroom/${c.roomCode}`)} style={{ background: "rgba(160,124,254,0.1)", color: "#cfbcff", border: "1px solid rgba(160,124,254,0.2)", borderRadius: "6px", padding: "8px", fontSize: "0.825rem", fontWeight: 600, cursor: "pointer", width: "100%", marginTop: "4px", transition: "all 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(160,124,254,0.2)")} onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(160,124,254,0.1)")}>
                     Enter Classroom
                   </button>
-                  <button
-                    onClick={() => {
-                      router.push(`/create-quiz/${c.roomCode}`);
-                    }}
-                    style={{
-                      background: "rgba(160, 124, 254, 0.15)",
-                      color: "#cfbcff",
-                      border: "1px solid rgba(160, 124, 254, 0.35)",
-                      borderRadius: "6px",
-                      padding: "8px",
-                      fontSize: "0.825rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      width: "100%",
-                      transition: "all 0.2s",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      marginTop: "4px"
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(160, 124, 254, 0.25)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(160, 124, 254, 0.15)")}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>assignment_add</span>
-                    Generate Quiz
-                  </button>
+                  {quizzesMap[c.id] && quizzesMap[c.id].length > 0 ? (
+                    <button
+                      onClick={() => {
+                        const q = quizzesMap[c.id][0];
+                        setActiveViewQuiz(q);
+                        setEditingQuizTitle(q.title);
+                        setEditingQuestions(JSON.parse(JSON.stringify(q.questions)));
+                        setIsEditingQuiz(false);
+                        setEditingError("");
+                      }}
+                      style={{
+                        background: "rgba(74, 222, 128, 0.15)",
+                        color: "#4ade80",
+                        border: "1px solid rgba(74, 222, 128, 0.35)",
+                        borderRadius: "6px",
+                        padding: "8px",
+                        fontSize: "0.825rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        width: "100%",
+                        transition: "all 0.2s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        marginTop: "4px"
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(74, 222, 128, 0.25)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(74, 222, 128, 0.15)")}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>visibility</span>
+                      View Quiz
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        router.push(`/create-quiz/${c.roomCode}`);
+                      }}
+                      style={{
+                        background: "rgba(160, 124, 254, 0.15)",
+                        color: "#cfbcff",
+                        border: "1px solid rgba(160, 124, 254, 0.35)",
+                        borderRadius: "6px",
+                        padding: "8px",
+                        fontSize: "0.825rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        width: "100%",
+                        transition: "all 0.2s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        marginTop: "4px"
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(160, 124, 254, 0.25)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(160, 124, 254, 0.15)")}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>assignment_add</span>
+                      Generate Quiz
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -519,7 +664,295 @@ export default function TeacherDashboard() {
         <span style={{ fontSize: "0.72rem", color: "#948e9f" }}>© 2026 EduAgent AI. Secured workspace portal.</span>
       </footer>
 
+      {activeViewQuiz && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(9, 10, 15, 0.8)", backdropFilter: "blur(12px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+          padding: "20px"
+        }}>
+          <div className="glass-card" style={{
+            maxWidth: "600px", width: "100%", borderRadius: "16px",
+            border: "1px solid rgba(160, 124, 254, 0.25)",
+            background: "#121318", padding: "32px", display: "flex", flexDirection: "column",
+            gap: "24px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+          }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
+              <div>
+                <span style={{ fontSize: "0.68rem", color: "#cfbcff", background: "rgba(160,124,254,0.1)", border: "1px solid rgba(160,124,254,0.25)", padding: "3px 10px", borderRadius: "6px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  {isEditingQuiz ? "Editing Classroom Quiz" : "Classroom Quiz"}
+                </span>
+                {isEditingQuiz ? (
+                  <h3 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#e3e1e9", margin: "8px 0 0 0" }}>Edit Mode</h3>
+                ) : (
+                  <h3 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#e3e1e9", margin: "8px 0 0 0" }}>{activeViewQuiz.title}</h3>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setActiveViewQuiz(null);
+                  setIsEditingQuiz(false);
+                }}
+                disabled={isSavingQuiz}
+                style={{
+                  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "50%", width: "36px", height: "36px", display: "flex", alignItems: "center",
+                  justifyContent: "center", color: "#cbc3d5", cursor: isSavingQuiz ? "not-allowed" : "pointer", transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => { if (!isSavingQuiz) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+                onMouseLeave={(e) => { if (!isSavingQuiz) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>close</span>
+              </button>
+            </div>
 
+            {/* Content Area */}
+            {isEditingQuiz ? (
+              /* --- Edit Mode --- */
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {editingError && (
+                  <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.25)", color: "#f87171", borderRadius: "8px", padding: "12px 16px", fontSize: "0.825rem", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>error</span>
+                    <span>{editingError}</span>
+                  </div>
+                )}
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#ccc3d4" }}>QUIZ TITLE</label>
+                  <input
+                    type="text"
+                    value={editingQuizTitle}
+                    onChange={(e) => setEditingQuizTitle(e.target.value)}
+                    style={{
+                      width: "100%", padding: "12px 16px", background: "rgba(255, 255, 255, 0.03)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
+                      color: "#e2e1eb", fontSize: "0.875rem", outline: "none"
+                    }}
+                  />
+                </div>
+
+                {/* Questions List */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {editingQuestions.map((q, idx) => (
+                    <div key={idx} style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", position: "relative" }}>
+                      
+                      {/* Delete Q Button */}
+                      {editingQuestions.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveQuestionFromQuiz(idx)}
+                          style={{ position: "absolute", top: "20px", right: "20px", background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex" }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>delete</span>
+                        </button>
+                      )}
+
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#cfbcff", letterSpacing: "0.05em" }}>QUESTION {idx + 1}</span>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#968e9d" }}>QUESTION TEXT</label>
+                        <input
+                          type="text"
+                          value={q.question}
+                          onChange={(e) => handleUpdateQuestionText(idx, e.target.value)}
+                          style={{
+                            width: "100%", padding: "12px 14px", background: "rgba(255, 255, 255, 0.02)",
+                            border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "8px",
+                            color: "#e2e1eb", fontSize: "0.875rem", outline: "none"
+                          }}
+                        />
+                      </div>
+
+                      {/* Options */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        {q.options.map((opt: string, optIdx: number) => (
+                          <div key={optIdx} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#968e9d" }}>OPTION {String.fromCharCode(65 + optIdx)}</label>
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={(e) => handleUpdateOption(idx, optIdx, e.target.value)}
+                              style={{
+                                width: "100%", padding: "10px 14px", background: "rgba(255, 255, 255, 0.02)",
+                                border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "8px",
+                                color: "#e2e1eb", fontSize: "0.85rem", outline: "none"
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Correct Answer Selector */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
+                        <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#968e9d" }}>CORRECT ANSWER</label>
+                        <select
+                          value={q.correctAnswer}
+                          onChange={(e) => handleUpdateCorrectAnswer(idx, e.target.value)}
+                          style={{
+                            width: "100%", padding: "12px", background: "rgba(255, 255, 255, 0.03)",
+                            border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
+                            color: "#e3e1e9", fontSize: "0.875rem", outline: "none", cursor: "pointer"
+                          }}
+                        >
+                          <option value="" style={{ background: "#1a1b21" }}>-- Select correct option --</option>
+                          {q.options.map((opt: string, optIdx: number) => (
+                            <option
+                              key={optIdx}
+                              value={opt}
+                              disabled={!opt.trim()}
+                              style={{ background: "#1a1b21" }}
+                            >
+                              Option {String.fromCharCode(65 + optIdx)} {opt.trim() ? `(${opt.substring(0, 30)})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddQuestionToQuiz}
+                  style={{
+                    background: "rgba(160, 124, 254, 0.08)", color: "#cfbcff",
+                    border: "1px dashed rgba(160, 124, 254, 0.3)", borderRadius: "8px",
+                    padding: "12px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>add</span>
+                  Add Another Question
+                </button>
+              </div>
+            ) : (
+              /* --- View Mode --- */
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {activeViewQuiz.questions.map((q, idx) => (
+                  <div key={idx} style={{
+                    background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px"
+                  }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <span style={{ color: "#cfbcff", fontWeight: 700, fontSize: "0.9rem" }}>{idx + 1}.</span>
+                      <p style={{ color: "#e3e1e9", fontWeight: 600, fontSize: "0.9rem", margin: 0, lineHeight: "1.5" }}>{q.question}</p>
+                    </div>
+                    
+                    {/* Options */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginLeft: "20px" }}>
+                      {q.options.map((opt, oIdx) => {
+                        const isCorrect = opt === q.correctAnswer;
+                        return (
+                          <div key={oIdx} style={{
+                            padding: "8px 12px", borderRadius: "6px", fontSize: "0.825rem",
+                            background: isCorrect ? "rgba(74, 222, 128, 0.08)" : "rgba(255, 255, 255, 0.02)",
+                            border: `1px solid ${isCorrect ? "rgba(74, 222, 128, 0.25)" : "rgba(255, 255, 255, 0.05)"}`,
+                            color: isCorrect ? "#4ade80" : "#cbc3d5",
+                            display: "flex", alignItems: "center", gap: "6px"
+                          }}>
+                            <span style={{
+                              width: "18px", height: "18px", borderRadius: "50%",
+                              background: isCorrect ? "#4ade80" : "rgba(255,255,255,0.05)",
+                              color: isCorrect ? "#090A0F" : "#968e9d",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: "0.68rem", fontWeight: 700
+                            }}>
+                              {String.fromCharCode(65 + oIdx)}
+                            </span>
+                            <span style={{ flex: 1 }}>{opt}</span>
+                            {isCorrect && (
+                              <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#4ade80" }}>check_circle</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Actions / Footer */}
+            {isEditingQuiz ? (
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "8px" }}>
+                <button
+                  onClick={() => {
+                    setIsEditingQuiz(false);
+                    setEditingQuizTitle(activeViewQuiz.title);
+                    setEditingQuestions(JSON.parse(JSON.stringify(activeViewQuiz.questions)));
+                    setEditingError("");
+                  }}
+                  disabled={isSavingQuiz}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.03)", color: "#e3e1e9",
+                    border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
+                    padding: "10px 24px", fontSize: "0.875rem", fontWeight: 600, cursor: isSavingQuiz ? "not-allowed" : "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => { if (!isSavingQuiz) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+                  onMouseLeave={(e) => { if (!isSavingQuiz) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveQuizEdit}
+                  disabled={isSavingQuiz}
+                  style={{
+                    background: "linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%)",
+                    color: "#090A0F", border: "none", borderRadius: "8px", padding: "10px 24px",
+                    fontSize: "0.875rem", fontWeight: 700, cursor: isSavingQuiz ? "not-allowed" : "pointer",
+                    transition: "all 0.2s", opacity: isSavingQuiz ? 0.7 : 1, display: "flex", alignItems: "center", gap: "6px"
+                  }}
+                >
+                  {isSavingQuiz ? (
+                    <>
+                      <div style={{ width: "16px", height: "16px", border: "2px solid #090A0F", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>save</span>
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "8px" }}>
+                <button
+                  onClick={() => {
+                    setIsEditingQuiz(true);
+                  }}
+                  style={{
+                    background: "rgba(160, 124, 254, 0.1)", color: "#cfbcff",
+                    border: "1px solid rgba(160, 124, 254, 0.25)", borderRadius: "8px",
+                    padding: "10px 24px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer",
+                    transition: "all 0.2s", display: "flex", alignItems: "center", gap: "6px"
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(160, 124, 254, 0.18)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(160, 124, 254, 0.1)")}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>edit</span>
+                  Edit Quiz
+                </button>
+                <button
+                  onClick={() => setActiveViewQuiz(null)}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.03)", color: "#e3e1e9",
+                    border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
+                    padding: "10px 24px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)")}
+                >
+                  Close View
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

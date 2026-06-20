@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../../Firebaseconfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { Classroom, saveGeneratedQuiz, QuizQuestion } from "../../../lib/firestore";
+import { Classroom, saveGeneratedQuiz, QuizQuestion, getRoomTranscripts } from "../../../lib/firestore";
 import DashboardNav from "../../components/DashboardNav";
 import PageLoader from "../../components/PageLoader";
 
@@ -191,13 +191,24 @@ export default function CreateQuizPage() {
     setSuccess("");
     setIsGenerating(true);
     try {
+      // 1. Fetch transcripts client-side if no topic is provided
+      let transcriptsText = "";
+      if (!topic.trim()) {
+        const transcripts = await getRoomTranscripts(classroom.roomCode);
+        transcriptsText = transcripts.length > 0
+          ? transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n")
+          : "";
+      }
+
+      // 2. Fetch generated questions from API
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           roomId: classroom.roomCode,
           topic: topic.trim() || undefined,
-          numQuestions: Number(numQuestions)
+          numQuestions: Number(numQuestions),
+          transcriptsText
         })
       });
 
@@ -205,6 +216,10 @@ export default function CreateQuizPage() {
       if (!response.ok) {
         throw new Error(data.error || "Failed to generate quiz");
       }
+
+      // 3. Save quiz to Firestore client-side where we have auth credentials
+      const generatedTitle = topic.trim() ? `AI Quiz - ${topic.trim()}` : "Auto-Generated Lecture Quiz";
+      await saveGeneratedQuiz(classroom.roomCode, generatedTitle, data.questions);
 
       setSuccess("Quiz generated and published successfully using AI!");
       setTimeout(() => {

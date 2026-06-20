@@ -13,7 +13,7 @@ import {
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
 import { useCallback, useState, useEffect, useRef } from "react";
-import { saveTranscriptLine } from "../../lib/firestore";
+import { saveTranscriptLine, getRoomTranscripts, saveGeneratedQuiz } from "../../lib/firestore";
 import { useRouter } from "next/navigation";
 
 interface VideoRoomProps {
@@ -244,21 +244,33 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
     }
 
     try {
+      // 1. Fetch transcripts client-side
+      const transcripts = await getRoomTranscripts(roomId);
+      const transcriptsText = transcripts.length > 0
+        ? transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n")
+        : "";
+
+      // 2. Fetch generated questions from API
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId }),
+        body: JSON.stringify({ roomId, transcriptsText }),
       });
       
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to generate quiz");
+        throw new Error(data.error || "Failed to generate quiz");
       }
       
+      // 3. Save generated quiz client-side
+      const quizTitle = "Auto-Generated Lecture Quiz";
+      await saveGeneratedQuiz(roomId, quizTitle, data.questions);
+
       alert("AI has generated a quiz based on your lecture! Students can now see it on their dashboard.");
       router.push("/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error generating quiz. Please check console.");
+      alert("Error generating quiz: " + (err.message || "Please check console."));
       setIsGenerating(false);
     }
   };

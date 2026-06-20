@@ -206,6 +206,35 @@ export async function saveGeneratedQuiz(roomId: string, title: string, questions
   });
 }
 
+export async function getClassroomQuizzes(classDocId: string): Promise<Quiz[]> {
+  if (!db) return [];
+  const quizzesRef = collection(db, "classrooms", classDocId, "quizzes");
+  const q = query(quizzesRef, orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Quiz));
+}
+
+/**
+ * Updates an existing quiz document in a classroom's quizzes subcollection.
+ */
+export async function updateClassroomQuiz(roomId: string, quizId: string, title: string, questions: QuizQuestion[]) {
+  if (!db) return;
+  const classQ = query(collection(db, "classrooms"), where("roomCode", "==", roomId));
+  const classSnap = await getDocs(classQ);
+  if (classSnap.empty) return;
+  
+  const classDocId = classSnap.docs[0].id;
+  const quizDocRef = doc(db, "classrooms", classDocId, "quizzes", quizId);
+  
+  await updateDoc(quizDocRef, {
+    title,
+    questions
+  });
+}
+
 /**
  * Fetches quizzes for a specific student across all their enrolled classes.
  */

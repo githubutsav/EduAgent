@@ -1,21 +1,17 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
-import { getRoomTranscripts, saveGeneratedQuiz } from "../../../lib/firestore";
 
 export async function POST(request: Request) {
   try {
-    const { roomId, topic, numQuestions } = await request.json();
+    const { roomId, topic, numQuestions, transcriptsText } = await request.json();
 
     if (!roomId) {
       return NextResponse.json({ error: "roomId is required" }, { status: 400 });
     }
 
-    // 1. Fetch transcripts for the room
-    const transcripts = await getRoomTranscripts(roomId);
-    
-    // Fallback if no transcripts are recorded (e.g., speech recognition didn't pick up anything)
-    const combinedTranscript = transcripts.length > 0 
-      ? transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n")
+    // Use transcripts text from client, fallback if empty
+    const combinedTranscript = transcriptsText && transcriptsText.trim()
+      ? transcriptsText
       : "The lecture covered the basics of Algebra including polynomials, vertex calculations, and factoring quadratic equations.";
 
     const groqApiKey = process.env.GROQ_API_KEY;
@@ -93,11 +89,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. Save to Firestore
-    const quizTitle = topic ? `AI Quiz - ${topic}` : "Auto-Generated Lecture Quiz";
-    await saveGeneratedQuiz(roomId, quizTitle, quizQuestions);
-
-    return NextResponse.json({ success: true, message: "Quiz generated successfully", count: quizQuestions.length });
+    return NextResponse.json({ success: true, questions: quizQuestions });
   } catch (error: any) {
     console.error("Error generating quiz:", error);
     return NextResponse.json({ error: error.message || "Failed to generate quiz" }, { status: 500 });
