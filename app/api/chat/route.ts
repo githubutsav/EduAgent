@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       const groq = new Groq({ apiKey: groqApiKey });
       const chatCompletion = await groq.chat.completions.create({
         messages: messages,
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.1-8b-instant",
         stream: true,
       });
 

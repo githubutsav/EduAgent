@@ -58,7 +58,7 @@ Format your response using clean Markdown with bullet points or short paragraphs
       const groq = new Groq({ apiKey: groqApiKey });
       const chatCompletion = await groq.chat.completions.create({
         messages: [{ role: "user", content: prompt }],
-        model: "llama-3.1-70b-versatile", // Powerful model for tutoring
+        model: "llama-3.1-8b-instant", // Powerful model for tutoring
         stream: true,
       });
 

@@ -10,6 +10,128 @@ interface QuizReviewModalProps {
   quiz: QuizResult | null;
 }
 
+// Helper function to render simple markdown formatted text with headers, lists, and bold text
+const renderAnalysisContent = (text: string) => {
+  if (!text) return null;
+
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let currentListItems: React.ReactNode[] = [];
+  let isInsideList = false;
+  let listType: "ul" | "ol" | null = null;
+
+  const flushList = (key: string | number) => {
+    if (currentListItems.length > 0) {
+      if (listType === "ul") {
+        elements.push(
+          <ul key={`ul-${key}`} style={{ paddingLeft: "20px", margin: "10px 0 18px 0", listStyleType: "disc", display: "flex", flexDirection: "column", gap: "6px" }}>
+            {currentListItems}
+          </ul>
+        );
+      } else if (listType === "ol") {
+        elements.push(
+          <ol key={`ol-${key}`} style={{ paddingLeft: "20px", margin: "10px 0 18px 0", listStyleType: "decimal", display: "flex", flexDirection: "column", gap: "6px" }}>
+            {currentListItems}
+          </ol>
+        );
+      }
+      currentListItems = [];
+    }
+    isInsideList = false;
+    listType = null;
+  };
+
+  const parseInlineStyles = (lineText: string) => {
+    const parts = lineText.split(/(\*\*.*?\*\*|\*.*?\*)/);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <strong key={i} style={{ color: "#cfbcff", fontWeight: 700 }}>
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return <em key={i} style={{ color: "#e3e1e9", fontStyle: "italic" }}>{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+  };
+
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushList(idx);
+      return;
+    }
+
+    // Headers
+    if (trimmed.startsWith("#")) {
+      flushList(idx);
+      const level = (trimmed.match(/^#+/) || [""])[0].length;
+      const headerText = trimmed.replace(/^#+\s*/, "");
+      
+      const headerStyle: React.CSSProperties = {
+        color: level === 1 ? "#ffffff" : level === 2 ? "#cfbcff" : "#38bdf8",
+        fontSize: level === 1 ? "1.35rem" : level === 2 ? "1.15rem" : "0.95rem",
+        fontWeight: 700,
+        marginTop: "16px",
+        marginBottom: "8px",
+        letterSpacing: "-0.01em",
+      };
+
+      elements.push(<h4 key={idx} style={headerStyle}>{parseInlineStyles(headerText)}</h4>);
+      return;
+    }
+
+    // Bullet lists
+    const bulletMatch = trimmed.match(/^[-*+]\s+(.*)/);
+    if (bulletMatch) {
+      if (!isInsideList || listType !== "ul") {
+        flushList(idx);
+        isInsideList = true;
+        listType = "ul";
+      }
+      const itemText = bulletMatch[1];
+      currentListItems.push(
+        <li key={`li-${idx}`} style={{ color: "#cbc3d5", lineHeight: "1.5" }}>
+          {parseInlineStyles(itemText)}
+        </li>
+      );
+      return;
+    }
+
+    // Numbered lists
+    const numberMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+    if (numberMatch) {
+      if (!isInsideList || listType !== "ol") {
+        flushList(idx);
+        isInsideList = true;
+        listType = "ol";
+      }
+      const itemText = numberMatch[2];
+      currentListItems.push(
+        <li key={`li-${idx}`} style={{ color: "#cbc3d5", lineHeight: "1.5" }}>
+          {parseInlineStyles(itemText)}
+        </li>
+      );
+      return;
+    }
+
+    // Paragraph
+    flushList(idx);
+    elements.push(
+      <p key={idx} style={{ margin: "6px 0 10px 0", color: "#cbc3d5", lineHeight: "1.6" }}>
+        {parseInlineStyles(trimmed)}
+      </p>
+    );
+  });
+
+  flushList("end");
+  return elements;
+};
+
 export default function QuizReviewModal({ isOpen, onClose, quiz }: QuizReviewModalProps) {
   const [analysis, setAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
@@ -37,7 +159,14 @@ export default function QuizReviewModal({ isOpen, onClose, quiz }: QuizReviewMod
       });
 
       if (!response.ok) {
-        throw new Error("Failed to connect to AI server.");
+        let errMsg = "Failed to connect to AI server.";
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) {
+            errMsg = errData.error;
+          }
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
       if (!response.body) throw new Error("No response body");
@@ -186,9 +315,9 @@ export default function QuizReviewModal({ isOpen, onClose, quiz }: QuizReviewMod
             ) : (
               <div style={{ 
                 color: "#e3e1e9", fontSize: "0.95rem", lineHeight: "1.6", 
-                whiteSpace: "pre-wrap", paddingBottom: "20px" 
+                paddingBottom: "20px" 
               }}>
-                {analysis}
+                {renderAnalysisContent(analysis)}
                 {isAnalyzing && (
                   <span style={{ 
                     display: "inline-block", width: "8px", height: "16px", 
