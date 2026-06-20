@@ -1,7 +1,7 @@
 export default function Footer() {
   const footerLinks = {
     Product: ["Vision", "Features", "Pricing"],
-    India: ["Language Support", "Rural Education", "Impact Stories"],
+    Impact: ["Language Support", "Global Education", "Impact Stories"],
     Company: ["Privacy Policy", "Terms of Service", "Contact Support"],
   };
 

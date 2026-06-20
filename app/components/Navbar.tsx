@@ -36,7 +36,6 @@ export default function Navbar() {
               {[
                 { label: "Vision", href: "#" },
                 { label: "Features", href: "#features" },
-                { label: "For India", href: "#" },
                 { label: "Experience", href: "#experience" },
               ].map((link) => (
                 <a

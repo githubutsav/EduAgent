@@ -44,7 +44,7 @@ export default function HeroSection() {
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-card mb-8">
           <span className="w-2 h-2 rounded-full bg-[#FE8495] animate-pulse" />
           <span className="text-xs tracking-widest uppercase">
-            Now teaching across 24 Indian states
+            Empowering classrooms worldwide
           </span>
         </div>
 
@@ -236,7 +236,7 @@ export default function HeroSection() {
               <span className="material-symbols-outlined text-[18px]">translate</span>
             </div>
             <div>
-              <div className="text-white text-[13px] font-bold mb-0.5 whitespace-nowrap">Switch to Hindi?</div>
+              <div className="text-white text-[13px] font-bold mb-0.5 whitespace-nowrap">Switch to Spanish?</div>
               <div className="text-white/50 text-[11px]">3 students need it</div>
             </div>
           </div>

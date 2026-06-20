@@ -7,7 +7,7 @@ import TestimonialsMarquee from "./components/TestimonialsMarquee";
 import TheShiftSection from "./components/TheShiftSection";
 import ChallengeSection from "./components/ChallengeSection";
 import LiveClassroomSection from "./components/LiveClassroomSection";
-import IndiaStatsSection from "./components/IndiaStatsSection";
+import GlobalStatsSection from "./components/GlobalStatsSection";
 import HowItWorksSection from "./components/HowItWorksSection";
 import ReflectionSection from "./components/ReflectionSection";
 import CtaSection from "./components/CtaSection";
@@ -40,7 +40,7 @@ export default function Home() {
       <TheShiftSection />
       <ChallengeSection />
       <LiveClassroomSection />
-      <IndiaStatsSection />
+      <GlobalStatsSection />
       <HowItWorksSection />
       <ReflectionSection />
       <CtaSection />

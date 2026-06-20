@@ -1,13 +1,13 @@
 "use client";
 
 const stats = [
-  { value: "24", label: "States Covered" },
-  { value: "11", label: "Indian Languages" },
-  { value: "12.4K", label: "Teachers Empowered" },
-  { value: "380K", label: "Active Students" },
+  { value: "45+", label: "Countries Reached" },
+  { value: "30+", label: "Languages Supported" },
+  { value: "25K+", label: "Teachers Empowered" },
+  { value: "1.2M+", label: "Active Students" },
 ];
 
-export default function IndiaStatsSection() {
+export default function GlobalStatsSection() {
   return (
     <section className="py-24 border-y border-white/5 bg-[#0d0e13]">
       <div className="max-w-[1280px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12 text-center fade-up">
