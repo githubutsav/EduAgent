@@ -10,6 +10,9 @@ import {
   LayoutContextProvider,
   Chat,
   useLayoutContext,
+  FocusLayoutContainer,
+  FocusLayout,
+  CarouselLayout,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
@@ -208,6 +211,9 @@ function DeviceErrorToast({
 
 /* ── Stage area (grid of participants) ───────────────────────────── */
 function StageArea() {
+  const layoutContext = useLayoutContext();
+  const pinnedTracks = layoutContext.pin.state || [];
+  
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -215,6 +221,59 @@ function StageArea() {
     ],
     { onlySubscribed: false }
   );
+
+  const hasPinnedTracks = pinnedTracks.length > 0;
+
+  if (hasPinnedTracks) {
+    const mainTrack = pinnedTracks[0];
+    const carouselTracks = tracks.filter(
+      (t) => t.participant.identity !== mainTrack.participant.identity
+    );
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - var(--lk-control-bar-height) - 100px)", gap: "12px", padding: "12px 24px 0 24px", boxSizing: "border-box" }}>
+        {/* View All Users Button Bar */}
+        <div style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+          <button
+            onClick={() => {
+              layoutContext.pin.dispatch?.({ msg: "clear_pin" });
+            }}
+            style={{
+              background: "rgba(160, 124, 254, 0.15)",
+              color: "#cfbcff",
+              border: "1px solid rgba(160, 124, 254, 0.35)",
+              borderRadius: "8px",
+              padding: "8px 16px",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              transition: "all 0.2s",
+              boxShadow: "0 4px 12px rgba(160, 124, 254, 0.08)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(160, 124, 254, 0.25)";
+              e.currentTarget.style.color = "#ffffff";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(160, 124, 254, 0.15)";
+              e.currentTarget.style.color = "#cfbcff";
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>grid_view</span>
+            View All Users
+          </button>
+        </div>
+
+        {/* Full Screen Focus Area */}
+        <div style={{ flex: 1, minHeight: 0, position: "relative", width: "100%", height: "100%" }}>
+          <FocusLayout trackRef={mainTrack} style={{ width: "100%", height: "100%" }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <GridLayout
