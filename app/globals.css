@@ -618,3 +618,162 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Custom LiveKit Theme overrides to match website theme ────────── */
+[data-lk-theme="default"] {
+  --lk-font-family: var(--font-sans), 'Inter', sans-serif;
+  --lk-bg: #090A0F;
+  --lk-bg2: #121318;
+  --lk-control-bar-bg: rgba(18, 19, 26, 0.85);
+  --lk-border-color: rgba(255, 255, 255, 0.08);
+  --lk-accent-color: #a07cfe;
+  --lk-accent-bg: rgba(160, 124, 254, 0.12);
+  --lk-text-color: #e3e1e9;
+  --lk-text-color-secondary: #cbc3d5;
+}
+
+/* Control Bar styling */
+.lk-control-bar {
+  background: rgba(18, 19, 26, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 12px 24px !important;
+}
+
+.lk-control-bar .lk-button {
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #cbc3d5 !important;
+  transition: all 0.2s ease !important;
+}
+
+.lk-control-bar .lk-button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.lk-control-bar .lk-button[data-lk-active="true"] {
+  background: rgba(160, 124, 254, 0.2) !important;
+  border-color: rgba(160, 124, 254, 0.4) !important;
+  color: #cfbcff !important;
+}
+
+/* Disconnect button styles */
+.lk-control-bar .lk-disconnect-button {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #f87171 !important;
+}
+
+.lk-control-bar .lk-disconnect-button:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #ffffff !important;
+}
+
+/* Chat container styles */
+.lk-chat {
+  background: rgba(18, 19, 26, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.lk-chat-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
+  padding: 16px 20px !important;
+  color: #e3e1e9 !important;
+  font-weight: 700 !important;
+}
+
+.lk-chat-entry {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+.lk-chat-entry-body {
+  color: #e3e1e9 !important;
+}
+
+.lk-chat-entry-meta {
+  color: #cfbcff !important;
+  font-weight: 600 !important;
+}
+
+.lk-chat-form {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
+  padding: 16px !important;
+}
+
+.lk-chat-form-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  color: #e3e1e9 !important;
+  outline: none !important;
+  padding: 10px 14px !important;
+}
+
+.lk-chat-form-input:focus {
+  border-color: rgba(160, 124, 254, 0.4) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.lk-chat-form button {
+  background: linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%) !important;
+  color: #090A0F !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.lk-chat-form button:hover {
+  opacity: 0.9 !important;
+}
+
+/* Participant Tile style overrides */
+.lk-participant-tile {
+  background: #121318 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  overflow: hidden !important;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+}
+
+/* Speaking indicators matching theme active glow */
+.lk-participant-tile[data-lk-speaking="true"] {
+  border-color: #a07cfe !important;
+  box-shadow: 0 0 20px rgba(160, 124, 254, 0.45) !important;
+}
+
+.lk-participant-tile .lk-participant-metadata {
+  background: rgba(9, 10, 15, 0.75) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 8px 12px !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+.lk-participant-metadata-item {
+  color: #e3e1e9 !important;
+  font-weight: 600 !important;
+}
+
+/* Focus layout background */
+.lk-focus-layout {
+  background: #090A0F !important;
+}
+
+.lk-grid-layout {
+  background: #090A0F !important;
+  padding: 16px !important;
+  gap: 16px !important;
+}

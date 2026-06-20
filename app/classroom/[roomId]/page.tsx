@@ -33,12 +33,12 @@ function ShareBar({ roomId, role }: ShareBarProps) {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "12px 24px",
-        background: "rgba(13, 13, 18, 0.75)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        background: "rgba(18, 19, 26, 0.8)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
         borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-        color: "#e2e1eb",
-        fontFamily: "Inter, sans-serif",
+        color: "#e3e1e9",
+        fontFamily: "var(--font-sans), Inter, sans-serif",
         zIndex: 50,
       }}
     >
@@ -135,13 +135,13 @@ function ShareBar({ roomId, role }: ShareBarProps) {
           <button
             onClick={handleCopy}
             style={{
-              background: copied ? "#22c55e" : "#d6baff",
-              color: copied ? "#ffffff" : "#410a83",
+              background: copied ? "#4ade80" : "#cfbcff",
+              color: "#090A0F",
               border: "none",
               borderRadius: "6px",
               padding: "6px 12px",
               fontSize: "0.75rem",
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -364,7 +364,7 @@ export default function ClassroomPage() {
 
   // Render VideoRoom Component with Share Bar
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#08080B" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#090A0F" }}>
       <ShareBar roomId={roomId} role={role} />
       <div style={{ flex: 1, minHeight: 0 }}>
         <VideoRoom
