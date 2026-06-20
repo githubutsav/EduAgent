@@ -45,7 +45,7 @@ function TestimonialCard({
   avatar: string;
 }) {
   return (
-    <div className="glass-card px-8 py-6 rounded-2xl min-w-[360px] flex flex-col gap-6">
+    <div className="glass-card px-8 py-6 rounded-2xl min-w-[360px] flex-shrink-0 flex flex-col gap-6">
       <p className="text-on-surface leading-relaxed text-lg">{quote}</p>
       <div className="flex items-center gap-4 mt-auto">
         {/* eslint-disable-next-line @next/next/no-img-element */}

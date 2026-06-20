@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { GraduationCap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
 
@@ -21,12 +22,7 @@ export default function Navbar() {
             {/* Logo */}
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push("/")}>
               <div className="w-8 h-8 rounded-lg gradient-button flex items-center justify-center group-hover:scale-105 transition-transform">
-                <span
-                  className="material-symbols-outlined text-white text-lg"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  school
-                </span>
+                <GraduationCap size={20} color="#090A0F" strokeWidth={2.5} />
               </div>
               <span className="text-xl font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors">
                 EduAgent

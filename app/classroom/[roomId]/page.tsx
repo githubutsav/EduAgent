@@ -191,19 +191,21 @@ export default function ClassroomPage() {
 
         // 1. Verify if room exists in Firestore or local storage fallback
         if (db) {
-          const roomRef = doc(db, "classrooms", roomId);
-          const roomSnap = await getDoc(roomRef);
-          if (roomSnap.exists()) {
-            roomData = roomSnap.data();
-            roomExists = roomData.isActive;
+          const { collection, query, where, getDocs } = await import("firebase/firestore");
+          const q = query(collection(db, "classrooms"), where("roomCode", "==", roomId));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            roomData = querySnapshot.docs[0].data();
+            roomExists = roomData.isActive !== false; // If isActive is undefined, default to true
           }
         } else {
           // Fallback mock database check for Developer Mode
           const savedRooms = localStorage.getItem("mindhub_demo_rooms");
           const rooms = savedRooms ? JSON.parse(savedRooms) : {};
-          if (rooms[roomId] && rooms[roomId].isActive) {
+          if (rooms[roomId]) {
             roomData = rooms[roomId];
-            roomExists = true;
+            roomExists = roomData.isActive !== false;
           }
         }
 
@@ -368,6 +370,9 @@ export default function ClassroomPage() {
         <VideoRoom
           token={token || ""}
           url={livekitUrl || ""}
+          roomId={roomId}
+          role={role}
+          userName={user?.displayName || "Educator"}
           onLeave={() => router.push("/dashboard")}
         />
       </div>

@@ -1,3 +1,5 @@
+import { GraduationCap } from "lucide-react";
+
 export default function PageLoader({ message = "Verifying secure session..." }: { message?: string }) {
   return (
     <div
@@ -25,12 +27,7 @@ export default function PageLoader({ message = "Verifying secure session..." }: 
             animation: "pulse-soft 2s ease-in-out infinite",
           }}
         >
-          <span
-            className="material-symbols-outlined"
-            style={{ color: "#090A0F", fontSize: "22px", fontVariationSettings: "'FILL' 1" }}
-          >
-            school
-          </span>
+          <GraduationCap size={22} color="#090A0F" strokeWidth={2.5} />
         </div>
         <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "#e3e1e9" }}>EduAgent</span>
       </div>

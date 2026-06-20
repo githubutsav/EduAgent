@@ -8,14 +8,18 @@ import {
   signOut,
   updateProfile,
   onAuthStateChanged,
+  getAdditionalUserInfo,
+  deleteUser,
 } from "firebase/auth";
-import { auth, googleProvider, isFirebaseConfigured } from "../../Firebaseconfig";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, googleProvider, isFirebaseConfigured, db } from "../../Firebaseconfig";
 
 export interface UserProfile {
   uid: string;
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  role?: "teacher" | "student";
   isMock?: boolean;
 }
 
@@ -24,8 +28,8 @@ interface AuthContextType {
   loading: boolean;
   isDemoMode: boolean;
   loginWithEmail: (email: string, password: string) => Promise<UserProfile>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<UserProfile>;
-  loginWithGoogle: () => Promise<UserProfile>;
+  signUpWithEmail: (email: string, password: string, name: string, role: "teacher" | "student") => Promise<UserProfile>;
+  loginWithGoogle: (intent: "login" | "signup", role?: "teacher" | "student") => Promise<UserProfile>;
   logout: () => Promise<void>;
 }
 
@@ -38,13 +42,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isDemoMode && auth) {
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
+          let role: "teacher" | "student" = "student";
+          if (db) {
+            try {
+              const docSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+              if (docSnap.exists() && docSnap.data().role) {
+                role = docSnap.data().role;
+              }
+            } catch (e) {
+              console.error("Failed to fetch user role from Firestore", e);
+            }
+          }
           setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
+            role,
             isMock: false,
           });
         } else {
@@ -73,11 +89,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!isDemoMode && auth) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const fbUser = userCredential.user;
+        let role: "teacher" | "student" = "student";
+        if (db) {
+          const docSnap = await getDoc(doc(db, "users", fbUser.uid));
+          if (docSnap.exists() && docSnap.data().role) role = docSnap.data().role;
+        }
         const profile: UserProfile = {
           uid: fbUser.uid,
           email: fbUser.email,
           displayName: fbUser.displayName || email.split("@")[0],
           photoURL: fbUser.photoURL,
+          role,
           isMock: false,
         };
         setUser(profile);
@@ -93,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: email,
             displayName: accounts[email].name,
             photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(accounts[email].name)}`,
+            role: accounts[email].role || "student",
             isMock: true,
           };
           localStorage.setItem("mindhub_demo_user", JSON.stringify(profile));
@@ -101,17 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (accounts[email]) {
           throw new Error("auth/wrong-password");
         } else {
-          const mockName = email.split("@")[0];
-          const profile: UserProfile = {
-            uid: "demo-uid-" + Math.random().toString(36).substr(2, 9),
-            email: email,
-            displayName: mockName.charAt(0).toUpperCase() + mockName.slice(1),
-            photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(email)}`,
-            isMock: true,
-          };
-          localStorage.setItem("mindhub_demo_user", JSON.stringify(profile));
-          setUser(profile);
-          return profile;
+          throw { code: "auth/user-not-found", message: "No user found with this email." };
         }
       }
     } catch (error: any) {
@@ -121,18 +134,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUpWithEmail = async (email: string, password: string, name: string): Promise<UserProfile> => {
+  const signUpWithEmail = async (email: string, password: string, name: string, role: "teacher" | "student"): Promise<UserProfile> => {
     setLoading(true);
     try {
       if (!isDemoMode && auth) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const fbUser = userCredential.user;
         await updateProfile(fbUser, { displayName: name });
+        if (db) {
+          await setDoc(doc(db, "users", fbUser.uid), { role });
+        }
         const profile: UserProfile = {
           uid: fbUser.uid,
           email: fbUser.email,
           displayName: name,
           photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
+          role,
           isMock: false,
         };
         setUser(profile);
@@ -144,11 +161,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const accounts = accountsData ? JSON.parse(accountsData) : {};
         if (accounts[email]) throw new Error("auth/email-already-in-use");
         const uid = "demo-uid-" + Math.random().toString(36).substr(2, 9);
-        accounts[email] = { password, name, uid };
+        accounts[email] = { password, name, role, uid };
         localStorage.setItem("mindhub_demo_accounts", JSON.stringify(accounts));
         const profile: UserProfile = {
           uid, email, displayName: name,
           photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
+          role,
           isMock: true,
         };
         localStorage.setItem("mindhub_demo_user", JSON.stringify(profile));
@@ -162,17 +180,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (): Promise<UserProfile> => {
+  const loginWithGoogle = async (intent: "login" | "signup", role?: "teacher" | "student"): Promise<UserProfile> => {
     setLoading(true);
     try {
       if (!isDemoMode && auth && googleProvider) {
         const result = await signInWithPopup(auth, googleProvider);
         const fbUser = result.user;
+        const additionalInfo = getAdditionalUserInfo(result);
+
+        // Enforce intent
+        if (intent === "login" && additionalInfo?.isNewUser) {
+          // User clicked "Log In" but they are a brand new user.
+          // Instantly delete the accidentally created Firebase account and throw an error.
+          await deleteUser(fbUser);
+          await signOut(auth);
+          throw { code: "auth/account-not-found", message: "User not registered, please register." };
+        }
+
+        let finalRole: "teacher" | "student" = role || "student";
+        if (db) {
+          const docSnap = await getDoc(doc(db, "users", fbUser.uid));
+          if (docSnap.exists() && docSnap.data().role) {
+            // They already have an account and a role in Firestore
+            finalRole = docSnap.data().role;
+          } else {
+            // First time signup or role missing
+            await setDoc(doc(db, "users", fbUser.uid), { role: finalRole });
+          }
+        }
         const profile: UserProfile = {
           uid: fbUser.uid,
           email: fbUser.email,
           displayName: fbUser.displayName,
           photoURL: fbUser.photoURL,
+          role: finalRole,
           isMock: false,
         };
         setUser(profile);
@@ -180,13 +221,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Mock Google Login
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        
+        const accountsData = localStorage.getItem("mindhub_demo_accounts");
+        const accounts = accountsData ? JSON.parse(accountsData) : {};
+        const demoEmail = "alex.mercer@mindhub.ai";
+
+        if (intent === "login" && !accounts[demoEmail]) {
+          throw { code: "auth/account-not-found", message: "No account found. Please go to the Sign Up tab to choose your role first." };
+        }
+
         const profile: UserProfile = {
-          uid: "google-mock-uid-" + Math.random().toString(36).substr(2, 9),
-          email: "alex.mercer@mindhub.ai",
+          uid: accounts[demoEmail]?.uid || "google-mock-uid-" + Math.random().toString(36).substr(2, 9),
+          email: demoEmail,
           displayName: "Alex Mercer (Google Demo)",
           photoURL: "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex%20Mercer",
+          role: accounts[demoEmail]?.role || role || "student",
           isMock: true,
         };
+
+        if (intent === "signup" && !accounts[demoEmail]) {
+          accounts[demoEmail] = { password: "google-oauth", name: profile.displayName, role: profile.role, uid: profile.uid };
+          localStorage.setItem("mindhub_demo_accounts", JSON.stringify(accounts));
+        }
+
         localStorage.setItem("mindhub_demo_user", JSON.stringify(profile));
         setUser(profile);
         return profile;

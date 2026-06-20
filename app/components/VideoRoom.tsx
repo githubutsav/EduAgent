@@ -12,11 +12,16 @@ import {
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
+import { saveTranscriptLine } from "../../lib/firestore";
+import { useRouter } from "next/navigation";
 
 interface VideoRoomProps {
   token: string;
   url: string;
+  roomId: string;
+  role: "teacher" | "student";
+  userName: string;
   onLeave: () => void;
 }
 
@@ -72,7 +77,6 @@ function DeviceErrorToast({
         pointerEvents: "auto",
       }}
     >
-      {/* Icon */}
       <div
         style={{
           width: "36px",
@@ -93,7 +97,6 @@ function DeviceErrorToast({
         </span>
       </div>
 
-      {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -116,7 +119,6 @@ function DeviceErrorToast({
         </div>
       </div>
 
-      {/* Close button */}
       <button
         onClick={handleDismiss}
         style={{
@@ -131,7 +133,6 @@ function DeviceErrorToast({
         }}
         onMouseEnter={(e) => (e.currentTarget.style.color = "#e2e1eb")}
         onMouseLeave={(e) => (e.currentTarget.style.color = "#968e9d")}
-        aria-label="Dismiss"
       >
         <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
           close
@@ -154,7 +155,7 @@ function StageArea() {
   return (
     <GridLayout
       tracks={tracks}
-      style={{ height: "calc(100vh - var(--lk-control-bar-height))" }}
+      style={{ height: "calc(100vh - var(--lk-control-bar-height) - 60px)" }}
     >
       <ParticipantTile />
     </GridLayout>
@@ -162,9 +163,105 @@ function StageArea() {
 }
 
 /* ── Main VideoRoom component ────────────────────────────────────── */
-export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
+export default function VideoRoom({ token, url, roomId, role, userName, onLeave }: VideoRoomProps) {
   const [toasts, setToasts] = useState<DeviceToast[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const router = useRouter();
+  const recognitionRef = useRef<any>(null);
+  const isTranscribingRef = useRef(false);
   let toastIdRef = 0;
+
+  // Initialize Speech Recognition for Teacher
+  useEffect(() => {
+    if (role !== "teacher" || typeof window === "undefined") return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("Speech Recognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      isTranscribingRef.current = true;
+      console.log("Teacher Live Transcription Started");
+    };
+
+    recognition.onresult = async (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          const transcript = event.results[i][0].transcript.trim();
+          if (transcript) {
+            console.log("Saving transcript:", transcript);
+            await saveTranscriptLine(roomId, transcript, userName);
+          }
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+    };
+
+    recognition.onend = () => {
+      if (isTranscribingRef.current) {
+        // Automatically restart if it stops unexpectedly
+        try {
+          recognition.start();
+        } catch (e) {}
+      }
+    };
+
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (e) {}
+
+    return () => {
+      isTranscribingRef.current = false;
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, [role, roomId, userName]);
+
+  const handleEndSessionAndGenerateQuiz = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    
+    // Stop transcribing
+    if (recognitionRef.current) {
+      isTranscribingRef.current = false;
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+
+    try {
+      const response = await fetch("/api/generate-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to generate quiz");
+      }
+      
+      alert("AI has generated a quiz based on your lecture! Students can now see it on their dashboard.");
+      router.push("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Error generating quiz. Please check console.");
+      setIsGenerating(false);
+    }
+  };
 
   const dismissToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -174,94 +271,33 @@ export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
     source: Track.Source,
     error: Error
   ): { title: string; message: string } => {
-    const sourceName =
-      source === Track.Source.Camera ? "Camera" : "Microphone";
+    const sourceName = source === Track.Source.Camera ? "Camera" : "Microphone";
 
-    if (
-      error.name === "NotAllowedError" ||
-      error.message.toLowerCase().includes("permission denied")
-    ) {
+    if (error.name === "NotAllowedError" || error.message.toLowerCase().includes("permission denied")) {
       return {
         title: `${sourceName} Access Blocked`,
-        message: `Your browser denied ${sourceName.toLowerCase()} access. Click the lock icon in the address bar → set ${sourceName} to "Allow" → refresh.`,
+        message: `Your browser denied ${sourceName.toLowerCase()} access.`,
       };
     }
-
-    if (
-      error.name === "NotFoundError" ||
-      error.message.toLowerCase().includes("not found")
-    ) {
-      return {
-        title: `No ${sourceName} Detected`,
-        message: `No ${sourceName.toLowerCase()} was found on this device. Please connect one and try again.`,
-      };
-    }
-
-    if (
-      error.name === "NotReadableError" ||
-      error.message.toLowerCase().includes("in use") ||
-      error.message.toLowerCase().includes("could not start")
-    ) {
-      return {
-        title: `${sourceName} Unavailable`,
-        message: `Your ${sourceName.toLowerCase()} may be in use by another application. Close other apps using it and retry.`,
-      };
-    }
-
-    return {
-      title: `${sourceName} Error`,
-      message: error.message || `An unexpected error occurred with your ${sourceName.toLowerCase()}.`,
-    };
+    return { title: `${sourceName} Error`, message: error.message };
   };
 
   const handleDeviceError = useCallback(
     (err: { source: Track.Source; error: Error }) => {
-      console.error(
-        `[LiveKit] Device error for ${err.source}:`,
-        err.error.name,
-        err.error.message
-      );
-
-      const sourceName =
-        err.source === Track.Source.Camera ? "Camera" : "Microphone";
+      const sourceName = err.source === Track.Source.Camera ? "Camera" : "Microphone";
       const { title, message } = getErrorDetails(err.source, err.error);
-
       const id = ++toastIdRef;
       setToasts((prev) => [...prev, { id, source: sourceName, title, message }]);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  if (!token || !url) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          height: "100vh",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#08080B",
-          color: "#f87171",
-          fontFamily: "Inter, sans-serif",
-          flexDirection: "column",
-          gap: "12px",
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: "48px" }}>
-          error
-        </span>
-        <span style={{ fontWeight: 600 }}>
-          LiveKit connection misconfigured or token missing.
-        </span>
-      </div>
-    );
-  }
+  if (!token || !url) return null;
 
   return (
     <div
       style={{
-        height: "100vh",
+        height: "100%",
         width: "100vw",
         backgroundColor: "#08080B",
         display: "flex",
@@ -269,6 +305,28 @@ export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
         fontFamily: "Inter, sans-serif",
       }}
     >
+      {role === "teacher" && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 24px", background: "rgba(160,124,254,0.1)", borderBottom: "1px solid rgba(160,124,254,0.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#cfbcff", fontSize: "0.85rem" }}>
+            <span className="material-symbols-outlined" style={{ animation: "pulse 2s infinite" }}>mic</span>
+            AI is transcribing your lecture to auto-generate a quiz...
+          </div>
+          <button 
+            onClick={handleEndSessionAndGenerateQuiz}
+            disabled={isGenerating}
+            style={{
+              background: "linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%)",
+              color: "#090A0F", border: "none", borderRadius: "8px", padding: "8px 16px",
+              fontSize: "0.875rem", fontWeight: 700, cursor: isGenerating ? "not-allowed" : "pointer",
+              display: "flex", alignItems: "center", gap: "6px", opacity: isGenerating ? 0.7 : 1
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>auto_awesome</span>
+            {isGenerating ? "Generating AI Quiz..." : "End Session & Generate Quiz"}
+          </button>
+        </div>
+      )}
+
       <LiveKitRoom
         video={false}
         audio={false}
@@ -294,11 +352,10 @@ export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
         <RoomAudioRenderer />
       </LiveKitRoom>
 
-      {/* ── Toast notification stack ──────────────────────────────── */}
       <div
         style={{
           position: "fixed",
-          top: "20px",
+          top: "80px",
           right: "20px",
           zIndex: 9999,
           display: "flex",
@@ -316,27 +373,19 @@ export default function VideoRoom({ token, url, onLeave }: VideoRoomProps) {
         ))}
       </div>
 
-      {/* ── Toast animations ─────────────────────────────────────── */}
       <style>{`
         @keyframes toast-slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(40px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
+          from { opacity: 0; transform: translateX(40px) scale(0.95); }
+          to { opacity: 1; transform: translateX(0) scale(1); }
         }
         @keyframes toast-slide-out {
-          from {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
-          to {
-            opacity: 0;
-            transform: translateX(40px) scale(0.95);
-          }
+          from { opacity: 1; transform: translateX(0) scale(1); }
+          to { opacity: 0; transform: translateX(40px) scale(0.95); }
+        }
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
         }
       `}</style>
     </div>
