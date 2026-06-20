@@ -38,7 +38,7 @@ export async function POST(request: Request) {
           { role: "system", content: promptSystem },
           { role: "user", content: promptUser }
         ],
-        model: "llama3-8b-8192",
+        model: "llama-3.3-70b-versatile",
         temperature: 0.2,
       });
 

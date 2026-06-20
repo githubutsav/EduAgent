@@ -90,10 +90,18 @@ export default function StudentDashboard() {
     setIsTyping(true);
     
     try {
-      const apiMessages = [...messages, { role: 'user', text: userMsg }].map(m => ({
-        role: m.role === 'ai' ? 'assistant' : 'user',
-        content: m.text
-      }));
+      const apiMessages = [...messages, { role: 'user', text: userMsg }]
+        .filter((m, idx) => !(idx === 0 && m.role === 'ai'))
+        .map(m => ({
+          role: m.role === 'ai' ? 'assistant' : 'user',
+          content: m.text
+        }));
+
+      // Prepend system message for context and API compliance
+      apiMessages.unshift({
+        role: 'system',
+        content: 'You are a helpful, encouraging AI Study Assistant. Explain concepts simply and guide the student.'
+      });
 
       const res = await fetch('/api/chat', {
         method: 'POST',
