@@ -189,11 +189,16 @@ export default function StudentDashboard() {
           style={{ borderRadius: "16px", padding: "28px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px", boxShadow: "0 0 40px rgba(160,124,254,0.08)" }}
         >
           <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+              <span style={{ fontSize: "0.68rem", color: "#38bdf8", background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.25)", padding: "3px 10px", borderRadius: "6px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Student Dashboard
+              </span>
+            </div>
             <h1 className="signature-gradient" style={{ fontSize: "2rem", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
-              Ready to learn, {user.displayName ? user.displayName.split(" ")[0] : "Student"}?
+              Welcome, {user.displayName ? user.displayName.split(" ")[0] : "Student"}!
             </h1>
             <p style={{ color: "#cbc3d5", fontSize: "0.95rem", marginTop: "6px", marginBottom: 0 }}>
-              You have 3 upcoming assignments. Let's conquer them!
+              What will you learn today?
             </p>
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
