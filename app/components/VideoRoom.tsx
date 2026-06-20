@@ -9,6 +9,7 @@ import {
   useTracks,
   LayoutContextProvider,
   Chat,
+  useLayoutContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
@@ -23,6 +24,69 @@ interface VideoRoomProps {
   role: "teacher" | "student";
   userName: string;
   onLeave: () => void;
+}
+
+interface CustomVideoConferenceProps {
+  handleDeviceError: (err: { source: Track.Source; error: Error }) => void;
+}
+
+function CustomVideoConference({ handleDeviceError }: CustomVideoConferenceProps) {
+  const layoutContext = useLayoutContext();
+  const showChat = layoutContext.widget.state?.showChat;
+
+  return (
+    <div className="lk-video-conference" style={{ position: "relative" }}>
+      <div className="lk-video-conference-inner">
+        <StageArea />
+        <ControlBar
+          variation="verbose"
+          onDeviceError={handleDeviceError}
+        />
+      </div>
+      {showChat && <Chat />}
+      
+      {/* Chat Toggle Button */}
+      <button
+        onClick={() => {
+          layoutContext.widget.dispatch?.({ msg: "toggle_chat" });
+        }}
+        style={{
+          position: "absolute",
+          bottom: "80px",
+          right: showChat ? "340px" : "20px",
+          zIndex: 1000,
+          background: "rgba(30, 30, 35, 0.85)",
+          backdropFilter: "blur(8px)",
+          border: "1px solid rgba(255, 255, 255, 0.15)",
+          color: "#cfbcff",
+          borderRadius: "50%",
+          width: "44px",
+          height: "44px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          boxShadow: "0 4px 15px rgba(0,0,0,0.4)",
+          transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(160, 124, 254, 0.25)";
+          e.currentTarget.style.borderColor = "rgba(160, 124, 254, 0.4)";
+          e.currentTarget.style.color = "#ffffff";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(30, 30, 35, 0.85)";
+          e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.15)";
+          e.currentTarget.style.color = "#cfbcff";
+        }}
+        title={showChat ? "Hide Chat" : "Show Chat"}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>
+          {showChat ? "chat_bubble" : "forum"}
+        </span>
+      </button>
+    </div>
+  );
 }
 
 /* ── Toast notification for device errors ────────────────────────── */
@@ -350,16 +414,7 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
         style={{ height: "100%" }}
       >
         <LayoutContextProvider>
-          <div className="lk-video-conference">
-            <div className="lk-video-conference-inner">
-              <StageArea />
-              <ControlBar
-                variation="verbose"
-                onDeviceError={handleDeviceError}
-              />
-            </div>
-            <Chat />
-          </div>
+          <CustomVideoConference handleDeviceError={handleDeviceError} />
         </LayoutContextProvider>
         <RoomAudioRenderer />
       </LiveKitRoom>
