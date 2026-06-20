@@ -6,13 +6,17 @@ import { useAuth } from "../../context/AuthContext";
 import { db } from "../../../Firebaseconfig";
 import { doc, getDoc } from "firebase/firestore";
 import VideoRoom from "../../components/VideoRoom";
+import { Quiz, getClassroomQuizzes } from "../../../lib/firestore";
+import TakeQuizModal from "../../components/TakeQuizModal";
 
 interface ShareBarProps {
   roomId: string;
   role: "teacher" | "student";
+  roomQuiz: Quiz | null;
+  onJoinQuiz: () => void;
 }
 
-function ShareBar({ roomId, role }: ShareBarProps) {
+function ShareBar({ roomId, role, roomQuiz, onJoinQuiz }: ShareBarProps) {
   const [copied, setCopied] = useState(false);
   const router = useRouter();
 
@@ -100,6 +104,39 @@ function ShareBar({ roomId, role }: ShareBarProps) {
         </div>
       </div>
 
+      {role === "student" && roomQuiz && (
+        <>
+          <button
+            onClick={onJoinQuiz}
+            style={{
+              background: "linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%)",
+              color: "#090A0F",
+              border: "none",
+              borderRadius: "8px",
+              padding: "8px 16px",
+              fontSize: "0.875rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              animation: "pulse 2s infinite ease-in-out",
+              transition: "transform 0.2s"
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>auto_awesome</span>
+            Join Live Quiz
+          </button>
+          <style>{`
+            @keyframes pulse {
+              0% { transform: scale(1); box-shadow: 0 0 8px rgba(160,124,254,0.25); }
+              50% { transform: scale(1.04); box-shadow: 0 0 18px rgba(160,124,254,0.45); }
+              100% { transform: scale(1); box-shadow: 0 0 8px rgba(160,124,254,0.25); }
+            }
+          `}</style>
+        </>
+      )}
+
       {/* Right section: Classroom Room Code & Copy Button */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         <span
@@ -170,6 +207,8 @@ export default function ClassroomPage() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<"teacher" | "student">("student");
+  const [roomQuiz, setRoomQuiz] = useState<Quiz | null>(null);
+  const [isTakingQuiz, setIsTakingQuiz] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -188,6 +227,7 @@ export default function ClassroomPage() {
 
         let roomData = null;
         let roomExists = false;
+        let classDocId = "";
 
         // 1. Verify if room exists in Firestore or local storage fallback
         if (db) {
@@ -196,7 +236,9 @@ export default function ClassroomPage() {
           const querySnapshot = await getDocs(q);
           
           if (!querySnapshot.empty) {
-            roomData = querySnapshot.docs[0].data();
+            const classDoc = querySnapshot.docs[0];
+            roomData = classDoc.data();
+            classDocId = classDoc.id;
             roomExists = roomData.isActive !== false; // If isActive is undefined, default to true
           }
         } else {
@@ -218,6 +260,32 @@ export default function ClassroomPage() {
         // 2. Identify role (Creator = Teacher, others = Student)
         const userRole = roomData.createdBy === user.uid ? "teacher" : "student";
         setRole(userRole);
+
+        // Load classroom quiz if it exists
+        if (roomExists && classDocId) {
+          const quizzes = await getClassroomQuizzes(classDocId);
+          let roomQuizData = null;
+          if (quizzes.length > 0) {
+            const activeQuiz = quizzes[0];
+            
+            // Check if student has already completed this quiz
+            let hasTaken = false;
+            if (userRole === "student" && db) {
+              const { collection, query, where, getDocs } = await import("firebase/firestore");
+              const resultsRef = collection(db, "classrooms", classDocId, "quizResults");
+              const rq = query(resultsRef, where("studentId", "==", user.uid), where("quizId", "==", activeQuiz.id));
+              const rSnap = await getDocs(rq);
+              if (!rSnap.empty) {
+                hasTaken = true;
+              }
+            }
+            
+            if (!hasTaken) {
+              roomQuizData = activeQuiz;
+            }
+          }
+          setRoomQuiz(roomQuizData);
+        }
 
         // 3. Request JWT access token from our API route
         const response = await fetch("/api/livekit/token", {
@@ -365,7 +433,12 @@ export default function ClassroomPage() {
   // Render VideoRoom Component with Share Bar
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#090A0F" }}>
-      <ShareBar roomId={roomId} role={role} />
+      <ShareBar 
+        roomId={roomId} 
+        role={role} 
+        roomQuiz={roomQuiz}
+        onJoinQuiz={() => setIsTakingQuiz(true)}
+      />
       <div style={{ flex: 1, minHeight: 0 }}>
         <VideoRoom
           token={token || ""}
@@ -376,6 +449,17 @@ export default function ClassroomPage() {
           onLeave={() => router.push("/dashboard")}
         />
       </div>
+
+      <TakeQuizModal
+        isOpen={isTakingQuiz}
+        onClose={() => setIsTakingQuiz(false)}
+        quiz={roomQuiz}
+        onQuizSubmitted={() => {
+          alert("Quiz completed and submitted successfully!");
+          setIsTakingQuiz(false);
+          setRoomQuiz(null); // Clear active quiz once completed
+        }}
+      />
     </div>
   );
 }

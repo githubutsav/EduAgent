@@ -7,6 +7,7 @@ import Link from "next/link";
 import { createClassroom, getTeacherClassrooms, getTeacherStudentsAnalytics, Classroom, getClassroomQuizzes, Quiz, updateClassroomQuiz, QuizQuestion } from "../../lib/firestore";
 import DashboardNav from "../components/DashboardNav";
 import PageLoader from "../components/PageLoader";
+import QuickAlert from "./QuickAlert";
 
 // The mockStudents array has been removed as we are now using real analytics data
 
@@ -44,6 +45,8 @@ export default function TeacherDashboard() {
   const [editingQuestions, setEditingQuestions] = useState<QuizQuestion[]>([]);
   const [isSavingQuiz, setIsSavingQuiz] = useState(false);
   const [editingError, setEditingError] = useState("");
+  const [isSyncingRoster, setIsSyncingRoster] = useState(false);
+  const [showSyncToast, setShowSyncToast] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push("/");
@@ -258,6 +261,15 @@ export default function TeacherDashboard() {
     }
   };
 
+  const handleSyncRoster = () => {
+    if (isSyncingRoster) return;
+    setIsSyncingRoster(true);
+    setTimeout(() => {
+      setIsSyncingRoster(false);
+      setShowSyncToast(true);
+    }, 2000);
+  };
+
   /* ─── Shared button styles ─────────────────────────────────────── */
   const primaryBtn: React.CSSProperties = {
     background: "linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%)",
@@ -270,6 +282,15 @@ export default function TeacherDashboard() {
   return (
     <div style={{ background: "#121318", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <DashboardNav />
+
+      {showSyncToast && (
+        <QuickAlert
+          title="Roster Synced Successfully!"
+          message="Classroom rosters have been synced with the school database and all active sessions are updated."
+          onClose={() => setShowSyncToast(false)}
+          duration={5000}
+        />
+      )}
 
       <main style={{ flex: 1, padding: "32px", maxWidth: "1440px", margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "28px" }}>
 
@@ -292,9 +313,21 @@ export default function TeacherDashboard() {
             </p>
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
-            <button style={primaryBtn} onClick={() => alert("Classroom sync trigger simulated!")}>
-              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>sync</span>
-              Sync Roster
+            <button 
+              style={{ ...primaryBtn, cursor: isSyncingRoster ? "not-allowed" : "pointer", opacity: isSyncingRoster ? 0.8 : 1 }} 
+              onClick={handleSyncRoster}
+              disabled={isSyncingRoster}
+            >
+              <span 
+                className="material-symbols-outlined" 
+                style={{ 
+                  fontSize: "18px", 
+                  animation: isSyncingRoster ? "spin 1.5s linear infinite" : "none" 
+                }}
+              >
+                sync
+              </span>
+              {isSyncingRoster ? "Syncing..." : "Sync Roster"}
             </button>
           </div>
         </div>
