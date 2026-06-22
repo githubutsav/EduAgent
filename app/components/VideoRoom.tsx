@@ -17,10 +17,11 @@ import {
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
 import { useCallback, useState, useEffect, useRef } from "react";
-import { saveTranscriptLine, getRoomTranscripts, saveGeneratedQuiz } from "../../lib/firestore";
+import { saveTranscriptLine, getRoomTranscripts, saveGeneratedQuiz, QuizQuestion } from "../../lib/firestore";
 import { useRouter } from "next/navigation";
 import { TranscriptManager } from "../../lib/transcript";
-import QuickAlert from "./QuickAlert";
+import { toast } from "react-toastify";
+import ReviewQuizModal from "./ReviewQuizModal";
 
 interface VideoRoomProps {
   token: string;
@@ -295,7 +296,12 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
   const [isListening, setIsListening] = useState(false);
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [numQuestionsSelection, setNumQuestionsSelection] = useState(5);
-  const [toastAlert, setToastAlert] = useState<{ title: string; message: string } | null>(null);
+  
+  // Review Quiz State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [generatedQuestions, setGeneratedQuestions] = useState<QuizQuestion[]>([]);
+  const [isPublishing, setIsPublishing] = useState(false);
+
   const router = useRouter();
   const transcriptManagerRef = useRef<TranscriptManager | null>(null);
   let toastIdRef = 0;
@@ -337,10 +343,10 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
       const mockText = "Today we will cover the fundamentals of Physics, specifically focusing on Newton's Laws of Motion. Newton's first law states that an object at rest stays at rest, and an object in motion stays in motion unless acted upon by an external force. This is also known as the law of inertia. The second law describes force as the product of mass and acceleration, represented by the equation F equals m times a. The third law states that for every action, there is an equal and opposite reaction.";
       
       await saveTranscriptLine(roomId, mockText, "Educator (Simulated)");
-      alert("Simulated class lecture data successfully pushed to the database! You can now click 'Generate Quiz'.");
+      toast.success("Simulated class lecture data successfully pushed to the database! You can now click 'Generate Quiz'.");
     } catch (e: any) {
       console.error(e);
-      alert("Failed to simulate speech: " + e.message);
+      toast.error("Failed to simulate speech: " + e.message);
       setTranscriptionStatus("error");
     }
   };
@@ -350,19 +356,13 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
       // 1. Verify transcripts exist client-side before opening config modal
       const transcripts = await getRoomTranscripts(roomId);
       if (transcripts.length === 0) {
-        setToastAlert({
-          title: "No Lecture Data Found",
-          message: "Please speak or simulate class lecture data first before generating a quiz."
-        });
+        toast.warning("Please speak or simulate class lecture data first before generating a quiz.");
         return;
       }
       setIsQuestionModalOpen(true);
     } catch (err: any) {
       console.error(err);
-      setToastAlert({
-        title: "Error checking transcripts",
-        message: err.message || "Failed to check classroom transcripts."
-      });
+      toast.error(err.message || "Failed to check classroom transcripts.");
     }
   };
 
@@ -396,22 +396,29 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
         throw new Error(data.error || "Failed to generate quiz");
       }
       
-      // 3. Save generated quiz client-side
-      const quizTitle = "Auto-Generated Lecture Quiz";
-      await saveGeneratedQuiz(roomId, quizTitle, data.questions);
-
-      setToastAlert({
-        title: "Quiz Published!",
-        message: `AI successfully generated a ${numQuestionsSelection}-question quiz! Students can now access it.`
-      });
+      // 3. Save questions in local state and show the Review Modal instead of publishing immediately
+      setGeneratedQuestions(data.questions);
+      setIsReviewModalOpen(true);
+      toast.info(`AI successfully generated ${data.questions.length} questions. Please review them.`);
     } catch (err: any) {
       console.error(err);
-      setToastAlert({
-        title: "Failed to generate quiz",
-        message: err.message || "Please check console logs."
-      });
+      toast.error(err.message || "Failed to generate quiz. Please check console logs.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handlePublishQuiz = async (title: string, editedQuestions: QuizQuestion[]) => {
+    setIsPublishing(true);
+    try {
+      await saveGeneratedQuiz(roomId, title, editedQuestions);
+      toast.success("Quiz published successfully! Students can now access it.");
+      setIsReviewModalOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to publish quiz.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -659,14 +666,13 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
         </div>
       )}
 
-      {toastAlert && (
-        <QuickAlert
-          title={toastAlert.title}
-          message={toastAlert.message}
-          onClose={() => setToastAlert(null)}
-          duration={5000}
-        />
-      )}
+      <ReviewQuizModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        initialQuestions={generatedQuestions}
+        onPublish={handlePublishQuiz}
+        isPublishing={isPublishing}
+      />
 
       <style>{`
         @keyframes toast-slide-in {

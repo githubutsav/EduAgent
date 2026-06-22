@@ -8,6 +8,8 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { Classroom, saveGeneratedQuiz, QuizQuestion, getRoomTranscripts } from "../../../lib/firestore";
 import DashboardNav from "../../components/DashboardNav";
 import PageLoader from "../../components/PageLoader";
+import { toast } from "react-toastify";
+import ReviewQuizModal from "../../components/ReviewQuizModal";
 
 export default function CreateQuizPage() {
   const params = useParams();
@@ -29,9 +31,13 @@ export default function CreateQuizPage() {
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(3);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [hasTranscripts, setHasTranscripts] = useState<boolean | null>(null);
+  const [error, setError] = useState("");
+
+  // Review AI Generated Quiz States
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [generatedQuestions, setGeneratedQuestions] = useState<QuizQuestion[]>([]);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Authenticate and load classroom
   useEffect(() => {
@@ -150,9 +156,8 @@ export default function CreateQuizPage() {
 
   // Submit manual quiz
   const handlePublishManualQuiz = async () => {
-    setError("");
     if (!quizTitle.trim()) {
-      setError("Please provide a Quiz Title.");
+      toast.error("Please provide a Quiz Title.");
       return;
     }
 
@@ -160,17 +165,17 @@ export default function CreateQuizPage() {
     for (let i = 0; i < manualQuestions.length; i++) {
       const q = manualQuestions[i];
       if (!q.question.trim()) {
-        setError(`Question ${i + 1} text cannot be empty.`);
+        toast.error(`Question ${i + 1} text cannot be empty.`);
         return;
       }
       for (let o = 0; o < 4; o++) {
         if (!q.options[o].trim()) {
-          setError(`Option ${o + 1} for Question ${i + 1} cannot be empty.`);
+          toast.error(`Option ${o + 1} for Question ${i + 1} cannot be empty.`);
           return;
         }
       }
       if (!q.correctAnswer) {
-        setError(`Please select the correct answer for Question ${i + 1}.`);
+        toast.error(`Please select the correct answer for Question ${i + 1}.`);
         return;
       }
     }
@@ -178,13 +183,13 @@ export default function CreateQuizPage() {
     setIsGenerating(true);
     try {
       await saveGeneratedQuiz(classroom.roomCode, quizTitle.trim(), manualQuestions);
-      setSuccess("Quiz published successfully!");
+      toast.success("Quiz published successfully!");
       setTimeout(() => {
         router.push("/dashboard");
       }, 1500);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to publish quiz.");
+      toast.error(err.message || "Failed to publish quiz.");
     } finally {
       setIsGenerating(false);
     }
@@ -192,8 +197,6 @@ export default function CreateQuizPage() {
 
   // Generate quiz using LLM
   const handleGenerateLLMQuiz = async () => {
-    setError("");
-    setSuccess("");
     setIsGenerating(true);
     try {
       // 1. Always fetch transcripts client-side
@@ -219,19 +222,32 @@ export default function CreateQuizPage() {
         throw new Error(data.error || "Failed to generate quiz");
       }
 
-      // 3. Save quiz to Firestore client-side where we have auth credentials
-      const generatedTitle = "Auto-Generated Lecture Quiz";
-      await saveGeneratedQuiz(classroom.roomCode, generatedTitle, data.questions);
+      // 3. Save to state and open the review modal
+      setGeneratedQuestions(data.questions);
+      setIsReviewModalOpen(true);
+      toast.success("AI successfully generated questions! Please review them.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to generate AI quiz.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-      setSuccess("Quiz generated and published successfully using AI!");
+  const handlePublishQuiz = async (title: string, editedQuestions: QuizQuestion[]) => {
+    setIsPublishing(true);
+    try {
+      await saveGeneratedQuiz(classroom.roomCode, title, editedQuestions);
+      toast.success("Quiz generated and published successfully using AI!");
+      setIsReviewModalOpen(false);
       setTimeout(() => {
         router.push("/dashboard");
       }, 1500);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to generate AI quiz.");
+      toast.error(err.message || "Failed to publish AI quiz.");
     } finally {
-      setIsGenerating(false);
+      setIsPublishing(false);
     }
   };
 
@@ -288,7 +304,7 @@ export default function CreateQuizPage() {
           }}
         >
           <button
-            onClick={() => { setMode("manual"); setError(""); setSuccess(""); }}
+            onClick={() => { setMode("manual"); setError(""); }}
             style={{
               flex: 1, padding: "12px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: 600,
               border: "none", cursor: "pointer",
@@ -301,7 +317,7 @@ export default function CreateQuizPage() {
             Create Yourself (Manual)
           </button>
           <button
-            onClick={() => { setMode("llm"); setError(""); setSuccess(""); }}
+            onClick={() => { setMode("llm"); setError(""); }}
             style={{
               flex: 1, padding: "12px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: 600,
               border: "none", cursor: "pointer",
@@ -315,19 +331,7 @@ export default function CreateQuizPage() {
           </button>
         </div>
 
-        {/* Error/Success alerts */}
-        {error && (
-          <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.25)", color: "#f87171", borderRadius: "8px", padding: "12px 16px", fontSize: "0.825rem", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>error</span>
-            <span>{error}</span>
-          </div>
-        )}
-        {success && (
-          <div style={{ background: "rgba(74, 222, 128, 0.1)", border: "1px solid rgba(74, 222, 128, 0.25)", color: "#4ade80", borderRadius: "8px", padding: "12px 16px", fontSize: "0.825rem", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>check_circle</span>
-            <span>{success}</span>
-          </div>
-        )}
+
 
         {/* Main Form container */}
         <div className="glass-card" style={{ borderRadius: "16px", padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -510,20 +514,47 @@ export default function CreateQuizPage() {
                     </span>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#ccc3d4" }}>NUMBER OF QUESTIONS (1-20)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={numQuestions}
-                      onChange={(e) => setNumQuestions(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
-                      style={{
-                        width: "100%", padding: "14px 16px", background: "rgba(255, 255, 255, 0.03)",
-                        border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
-                        color: "#e2e1eb", fontSize: "0.875rem", outline: "none"
-                      }}
-                    />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#ccc3d4", letterSpacing: "0.05em" }}>NUMBER OF QUESTIONS</label>
+                    
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {[3, 5, 10, 15].map((num) => (
+                        <button
+                          key={num}
+                          onClick={() => setNumQuestions(num)}
+                          type="button"
+                          style={{
+                            flex: 1, padding: "10px 0", borderRadius: "6px", fontSize: "0.825rem", fontWeight: 600,
+                            cursor: "pointer", border: "1px solid",
+                            background: numQuestions === num ? "rgba(160, 124, 254, 0.15)" : "rgba(255,255,255,0.02)",
+                            color: numQuestions === num ? "#cfbcff" : "#ccc3d4",
+                            borderColor: numQuestions === num ? "rgba(160, 124, 254, 0.4)" : "rgba(255,255,255,0.08)",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {num} Qs
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Slider for custom select */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "0.72rem", color: "#948e9f" }}>Custom select (1-20)</span>
+                        <span style={{ fontSize: "0.825rem", color: "#cfbcff", fontWeight: 700 }}>{numQuestions} Questions</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="20"
+                        value={numQuestions}
+                        onChange={(e) => setNumQuestions(Number(e.target.value))}
+                        style={{
+                          width: "100%", accentColor: "#A07CFE", background: "rgba(255,255,255,0.08)",
+                          height: "6px", borderRadius: "3px", cursor: "pointer", outline: "none"
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {/* Actions */}
@@ -559,6 +590,13 @@ export default function CreateQuizPage() {
           )}
         </div>
       </main>
+      <ReviewQuizModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        initialQuestions={generatedQuestions}
+        onPublish={handlePublishQuiz}
+        isPublishing={isPublishing}
+      />
     </div>
   );
 }

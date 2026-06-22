@@ -8,7 +8,7 @@ import { doc, getDoc } from "firebase/firestore";
 import VideoRoom from "../../components/VideoRoom";
 import { Quiz, getClassroomQuizzes } from "../../../lib/firestore";
 import TakeQuizModal from "../../components/TakeQuizModal";
-import QuickAlert from "../../components/QuickAlert";
+import { toast } from "react-toastify";
 
 interface ShareBarProps {
   roomId: string;
@@ -210,7 +210,6 @@ export default function ClassroomPage() {
   const [role, setRole] = useState<"teacher" | "student">("student");
   const [roomQuiz, setRoomQuiz] = useState<Quiz | null>(null);
   const [isTakingQuiz, setIsTakingQuiz] = useState(false);
-  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -457,19 +456,11 @@ export default function ClassroomPage() {
         onClose={() => setIsTakingQuiz(false)}
         quiz={roomQuiz}
         onQuizSubmitted={() => {
-          setShowToast(true);
+          toast.success("Quiz completed and submitted successfully!");
           setIsTakingQuiz(false);
           setRoomQuiz(null); // Clear active quiz once completed
         }}
       />
-      {showToast && (
-        <QuickAlert
-          title="Quiz Submitted!"
-          message="Quiz completed and submitted successfully!"
-          onClose={() => setShowToast(false)}
-          duration={4000}
-        />
-      )}
     </div>
   );
 }

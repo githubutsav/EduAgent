@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Quiz, submitQuizResult } from "../../lib/firestore";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 interface TakeQuizModalProps {
   isOpen: boolean;
@@ -67,7 +68,7 @@ export default function TakeQuizModal({ isOpen, onClose, quiz, onQuizSubmitted }
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Failed to submit quiz. Please try again.");
+      toast.error("Failed to submit quiz. Please try again.");
       setIsSubmitting(false);
     }
   };

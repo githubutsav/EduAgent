@@ -7,8 +7,8 @@ import Link from "next/link";
 import { createClassroom, getTeacherClassrooms, getTeacherStudentsAnalytics, Classroom, getClassroomQuizzes, Quiz, updateClassroomQuiz, QuizQuestion, deleteClassroom } from "../../lib/firestore";
 import DashboardNav from "../components/DashboardNav";
 import PageLoader from "../components/PageLoader";
-import QuickAlert from "./QuickAlert";
 import DeleteClassroomConfirmModal from "./DeleteClassroomConfirmModal";
+import { toast } from "react-toastify";
 
 // The mockStudents array has been removed as we are now using real analytics data
 
@@ -47,7 +47,6 @@ export default function TeacherDashboard() {
   const [isSavingQuiz, setIsSavingQuiz] = useState(false);
   const [editingError, setEditingError] = useState("");
   const [isSyncingRoster, setIsSyncingRoster] = useState(false);
-  const [showSyncToast, setShowSyncToast] = useState(false);
   const [classroomToDelete, setClassroomToDelete] = useState<Classroom | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -96,7 +95,7 @@ export default function TeacherDashboard() {
       setClassrooms([newClass, ...classrooms]);
       setNewRoomName("");
     } catch (error) {
-      alert("Error creating room: " + (error as Error).message);
+      toast.error("Error creating room: " + (error as Error).message);
     } finally {
       setIsCreatingRoom(false);
     }
@@ -117,8 +116,9 @@ export default function TeacherDashboard() {
       }
       
       setClassroomToDelete(null);
+      toast.success("Classroom deleted successfully.");
     } catch (error) {
-      alert("Error deleting classroom: " + (error as Error).message);
+      toast.error("Error deleting classroom: " + (error as Error).message);
     } finally {
       setIsDeleting(false);
     }
@@ -139,7 +139,7 @@ export default function TeacherDashboard() {
         setSelectedClassroomForQuiz(newClass);
         router.push(`/create-quiz/${newClass.roomCode}`);
       } catch (error) {
-        alert("Failed to auto-create classroom: " + (error as Error).message);
+        toast.error("Failed to auto-create classroom: " + (error as Error).message);
       } finally {
         setIsCreatingRoom(false);
       }
@@ -291,7 +291,7 @@ export default function TeacherDashboard() {
     setIsSyncingRoster(true);
     setTimeout(() => {
       setIsSyncingRoster(false);
-      setShowSyncToast(true);
+      toast.success("Classroom rosters have been synced with the school database and all active sessions are updated.");
     }, 2000);
   };
 
@@ -308,14 +308,7 @@ export default function TeacherDashboard() {
     <div style={{ background: "#121318", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <DashboardNav />
 
-      {showSyncToast && (
-        <QuickAlert
-          title="Roster Synced Successfully!"
-          message="Classroom rosters have been synced with the school database and all active sessions are updated."
-          onClose={() => setShowSyncToast(false)}
-          duration={5000}
-        />
-      )}
+      {/* Sync toast handled by react-toastify */}
 
       <main style={{ flex: 1, padding: "32px", maxWidth: "1440px", margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "28px" }}>
 
@@ -733,7 +726,7 @@ export default function TeacherDashboard() {
                 <p style={{ fontSize: "0.8rem", color: "#cbc3d5", margin: 0 }}>4 completed objectives. AI recommends scheduling an intervention script.</p>
               </div>
               <button
-                onClick={() => { setFocusArea(`Targeted review for ${selectedStudent.name}`); alert(`Focus set to ${selectedStudent.name}! Generate an AI plan above.`); }}
+                onClick={() => { setFocusArea(`Targeted review for ${selectedStudent.name}`); toast.success(`Focus set to ${selectedStudent.name}! Generate an AI plan above.`); }}
                 style={{ background: "rgba(160,124,254,0.1)", color: "#cfbcff", border: "1px solid rgba(160,124,254,0.25)", borderRadius: "8px", padding: "8px 16px", fontSize: "0.825rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(160,124,254,0.18)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(160,124,254,0.1)")}

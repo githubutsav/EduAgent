@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const metadata: Metadata = {
   title: "EduAgent | Transforming Classrooms with AI",
@@ -29,7 +31,10 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-background-deep text-on-surface font-sans overflow-x-hidden selection:bg-primary/30 selection:text-primary">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <ToastContainer theme="dark" position="top-right" autoClose={4000} />
+        </AuthProvider>
       </body>
     </html>
   );

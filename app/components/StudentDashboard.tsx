@@ -7,8 +7,8 @@ import Link from "next/link";
 import { getStudentClassrooms, joinClassroom, getStudentQuizzes, getStudentQuizResults, Classroom, Quiz, QuizResult } from "../../lib/firestore";
 import DashboardNav from "./DashboardNav";
 import PageLoader from "./PageLoader";
-import QuickAlert from "./QuickAlert";
 import QuizReviewModal from "./QuizReviewModal";
+import { toast } from "react-toastify";
 import TakeQuizModal from "./TakeQuizModal";
 
 const statCards = [
@@ -36,7 +36,7 @@ export default function StudentDashboard() {
     { role: 'ai', text: "Hi! I'm your AI Study Assistant. What are we learning today?" }
   ]);
 
-  const [showAlert, setShowAlert] = useState(false);
+
   const [selectedQuiz, setSelectedQuiz] = useState<QuizResult | null>(null);
 
   useEffect(() => {
@@ -53,7 +53,9 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (user) {
-      const timer = setTimeout(() => setShowAlert(true), 1500);
+      const timer = setTimeout(() => {
+        toast.info("New AI Insights Ready! Your Algebra Foundations Quiz analysis is ready to review. Let's tackle those weak areas!");
+      }, 1500);
       refreshData();
       return () => clearTimeout(timer);
     }
@@ -74,7 +76,7 @@ export default function StudentDashboard() {
       // Wait for join, then redirect to the room.
       router.push(`/classroom/${joinRoomId.trim().toLowerCase()}`);
     } catch (error) {
-      alert((error as Error).message);
+      toast.error((error as Error).message);
     } finally {
       setIsJoining(false);
     }
@@ -167,14 +169,7 @@ export default function StudentDashboard() {
     <div style={{ background: "#121318", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <DashboardNav />
 
-      {showAlert && (
-        <QuickAlert 
-          title="New AI Insights Ready!" 
-          message="Your Algebra Foundations Quiz analysis is ready to review. Let's tackle those weak areas!"
-          onClose={() => setShowAlert(false)}
-          duration={8000}
-        />
-      )}
+
 
       <QuizReviewModal 
         isOpen={!!selectedQuiz} 
