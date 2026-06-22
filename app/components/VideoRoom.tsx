@@ -20,6 +20,7 @@ import { useCallback, useState, useEffect, useRef } from "react";
 import { saveTranscriptLine, getRoomTranscripts, saveGeneratedQuiz } from "../../lib/firestore";
 import { useRouter } from "next/navigation";
 import { TranscriptManager } from "../../lib/transcript";
+import QuickAlert from "./QuickAlert";
 
 interface VideoRoomProps {
   token: string;
@@ -292,6 +293,9 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
   const [isGenerating, setIsGenerating] = useState(false);
   const [transcriptionStatus, setTranscriptionStatus] = useState<"listening" | "error" | "mocking">("listening");
   const [isListening, setIsListening] = useState(false);
+  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
+  const [numQuestionsSelection, setNumQuestionsSelection] = useState(5);
+  const [toastAlert, setToastAlert] = useState<{ title: string; message: string } | null>(null);
   const router = useRouter();
   const transcriptManagerRef = useRef<TranscriptManager | null>(null);
   let toastIdRef = 0;
@@ -342,19 +346,28 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
   };
 
   const handleGenerateQuiz = async () => {
-    if (isGenerating) return;
-
-    // Ask teacher for question count
-    const numStr = prompt("How many questions would you like the quiz to have? (1-20)", "5");
-    if (numStr === null) {
-      return; // User cancelled
+    try {
+      // 1. Verify transcripts exist client-side before opening config modal
+      const transcripts = await getRoomTranscripts(roomId);
+      if (transcripts.length === 0) {
+        setToastAlert({
+          title: "No Lecture Data Found",
+          message: "Please speak or simulate class lecture data first before generating a quiz."
+        });
+        return;
+      }
+      setIsQuestionModalOpen(true);
+    } catch (err: any) {
+      console.error(err);
+      setToastAlert({
+        title: "Error checking transcripts",
+        message: err.message || "Failed to check classroom transcripts."
+      });
     }
-    const numQuestions = parseInt(numStr, 10);
-    if (isNaN(numQuestions) || numQuestions < 1 || numQuestions > 20) {
-      alert("Please enter a valid number of questions between 1 and 20.");
-      return;
-    }
+  };
 
+  const handleConfirmGenerateQuiz = async () => {
+    setIsQuestionModalOpen(false);
     setIsGenerating(true);
     
     // Flush remaining text from transcription manager to DB in real-time
@@ -369,16 +382,13 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
     try {
       // 1. Fetch transcripts client-side
       const transcripts = await getRoomTranscripts(roomId);
-      if (transcripts.length === 0) {
-        throw new Error("No transcription data available for this classroom. Please make sure the educator has spoken during the live session before generating a quiz.");
-      }
       const transcriptsText = transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n");
 
       // 2. Fetch generated questions from API
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, numQuestions, transcriptsText }),
+        body: JSON.stringify({ roomId, numQuestions: numQuestionsSelection, transcriptsText }),
       });
       
       const data = await response.json();
@@ -390,10 +400,16 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
       const quizTitle = "Auto-Generated Lecture Quiz";
       await saveGeneratedQuiz(roomId, quizTitle, data.questions);
 
-      alert("AI has generated a quiz based on your lecture! Students can now see it on their dashboard.");
+      setToastAlert({
+        title: "Quiz Published!",
+        message: `AI successfully generated a ${numQuestionsSelection}-question quiz! Students can now access it.`
+      });
     } catch (err: any) {
       console.error(err);
-      alert("Error generating quiz: " + (err.message || "Please check console."));
+      setToastAlert({
+        title: "Failed to generate quiz",
+        message: err.message || "Please check console logs."
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -544,6 +560,113 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
           />
         ))}
       </div>
+
+      {isQuestionModalOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(9, 10, 15, 0.7)", backdropFilter: "blur(8px)",
+          display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999,
+          padding: "20px"
+        }}>
+          <div className="glass-card" style={{
+            maxWidth: "400px", width: "100%", borderRadius: "16px",
+            border: "1px solid rgba(160, 124, 254, 0.25)",
+            background: "#121318", padding: "32px", display: "flex", flexDirection: "column",
+            gap: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+          }}>
+            {/* Modal Header */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <span className="material-symbols-outlined" style={{ color: "#cfbcff", fontSize: "20px" }}>auto_awesome</span>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#e3e1e9", margin: 0 }}>Configure AI Quiz</h3>
+              </div>
+              <p style={{ fontSize: "0.825rem", color: "#cbc3d5", margin: 0, lineHeight: "1.5" }}>
+                Select how many questions the AI should generate based strictly on your lecture transcripts.
+              </p>
+            </div>
+
+            {/* Selector Option Pills */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <label style={{ fontSize: "0.72rem", fontWeight: 600, color: "#ccc3d4", letterSpacing: "0.05em" }}>NUMBER OF QUESTIONS</label>
+              
+              <div style={{ display: "flex", gap: "8px" }}>
+                {[3, 5, 10, 15].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setNumQuestionsSelection(num)}
+                    style={{
+                      flex: 1, padding: "8px 0", borderRadius: "6px", fontSize: "0.825rem", fontWeight: 600,
+                      cursor: "pointer", border: "1px solid",
+                      background: numQuestionsSelection === num ? "rgba(160, 124, 254, 0.15)" : "rgba(255,255,255,0.02)",
+                      color: numQuestionsSelection === num ? "#cfbcff" : "#ccc3d4",
+                      borderColor: numQuestionsSelection === num ? "rgba(160, 124, 254, 0.4)" : "rgba(255,255,255,0.08)",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {num} Qs
+                  </button>
+                ))}
+              </div>
+
+              {/* Slider for custom select */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.72rem", color: "#948e9f" }}>Custom select (1-20)</span>
+                  <span style={{ fontSize: "0.825rem", color: "#cfbcff", fontWeight: 700 }}>{numQuestionsSelection} Questions</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  value={numQuestionsSelection}
+                  onChange={(e) => setNumQuestionsSelection(Number(e.target.value))}
+                  style={{
+                    width: "100%", accentColor: "#A07CFE", background: "rgba(255,255,255,0.08)",
+                    height: "6px", borderRadius: "3px", cursor: "pointer", outline: "none"
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: "flex", gap: "12px", marginTop: "4px" }}>
+              <button
+                onClick={() => setIsQuestionModalOpen(false)}
+                style={{
+                  flex: 1, background: "rgba(255,255,255,0.03)", color: "#e3e1e9",
+                  border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px",
+                  padding: "10px 0", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+                  textAlign: "center", transition: "all 0.2s"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmGenerateQuiz}
+                style={{
+                  flex: 2, background: "linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%)",
+                  color: "#090A0F", border: "none", borderRadius: "8px",
+                  padding: "10px 0", fontSize: "0.85rem", fontWeight: 700, cursor: "pointer",
+                  textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  boxShadow: "0 0 16px rgba(160,124,254,0.25)"
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>auto_awesome</span>
+                Generate Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastAlert && (
+        <QuickAlert
+          title={toastAlert.title}
+          message={toastAlert.message}
+          onClose={() => setToastAlert(null)}
+          duration={5000}
+        />
+      )}
 
       <style>{`
         @keyframes toast-slide-in {
