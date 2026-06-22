@@ -9,10 +9,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "roomId is required" }, { status: 400 });
     }
 
-    // Use transcripts text from client, fallback if empty
-    const combinedTranscript = transcriptsText && transcriptsText.trim()
-      ? transcriptsText
-      : "The lecture covered the basics of Algebra including polynomials, vertex calculations, and factoring quadratic equations.";
+    // Check that transcript data is present
+    if (!transcriptsText || !transcriptsText.trim()) {
+      return NextResponse.json(
+        { error: "No transcription data available for this classroom. Please make sure the educator has spoken during the live session before generating a quiz." },
+        { status: 400 }
+      );
+    }
+
+    const combinedTranscript = transcriptsText.trim();
 
     const groqApiKey = process.env.GROQ_API_KEY;
     
@@ -22,12 +27,14 @@ export async function POST(request: Request) {
 
     const count = typeof numQuestions === "number" ? Math.max(1, Math.min(20, numQuestions)) : 3;
 
-    const promptSystem = topic 
-      ? `You are an expert educator. Generate a ${count}-question multiple choice quiz based strictly on the topic provided. Your response MUST be valid JSON containing an array of objects. Each object must have: 'question' (string), 'options' (array of exactly 4 strings), and 'correctAnswer' (string, must exactly match one of the options). Do not include any markdown formatting, only output the JSON array.`
-      : `You are an expert educator. You will be given a transcript of a live class lecture. Generate a ${count}-question multiple choice quiz based strictly on the content of the transcript. Your response MUST be valid JSON containing an array of objects. Each object must have: 'question' (string), 'options' (array of exactly 4 strings), and 'correctAnswer' (string, must exactly match one of the options). Do not include any markdown formatting, only output the JSON array.`;
+    const promptSystem = `You are an expert educator. You will be given a transcript of a live class lecture. Generate a ${count}-question multiple choice quiz based STRICTLY AND ONLY on the provided transcript.
+Do NOT use external or general knowledge to introduce facts, concepts, or topics that were not discussed in the transcript.
+Each question's concept and answer MUST be supported by the transcript text.
+Your response MUST be valid JSON containing an array of objects. Each object must have: 'question' (string), 'options' (array of exactly 4 strings), and 'correctAnswer' (string, must exactly match one of the options). Do not include any markdown formatting, only output the JSON array.`;
+
     const promptUser = topic
-      ? `Generate a quiz on the topic: "${topic}".`
-      : `Here is the transcript:\n\n${combinedTranscript}`;
+      ? `Here is the transcript of the lecture:\n\n${combinedTranscript}\n\nPlease generate a quiz focused on the topic: "${topic}", using ONLY the information mentioned in the transcript above. If the topic is not discussed in the transcript, generate questions on other topics that are discussed in the transcript.`
+      : `Here is the transcript of the lecture:\n\n${combinedTranscript}\n\nPlease generate a quiz using ONLY the information mentioned in the transcript.`;
 
     try {
       if (!groqApiKey) throw new Error("GROQ_API_KEY missing");

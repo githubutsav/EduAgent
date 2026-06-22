@@ -19,6 +19,7 @@ import { Track } from "livekit-client";
 import { useCallback, useState, useEffect, useRef } from "react";
 import { saveTranscriptLine, getRoomTranscripts, saveGeneratedQuiz } from "../../lib/firestore";
 import { useRouter } from "next/navigation";
+import { TranscriptManager } from "../../lib/transcript";
 
 interface VideoRoomProps {
   token: string;
@@ -290,66 +291,21 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
   const [toasts, setToasts] = useState<DeviceToast[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const router = useRouter();
-  const recognitionRef = useRef<any>(null);
-  const isTranscribingRef = useRef(false);
+  const transcriptManagerRef = useRef<TranscriptManager | null>(null);
   let toastIdRef = 0;
 
   // Initialize Speech Recognition for Teacher
   useEffect(() => {
     if (role !== "teacher" || typeof window === "undefined") return;
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn("Speech Recognition not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.lang = "en-US";
-
-    recognition.onstart = () => {
-      isTranscribingRef.current = true;
-      console.log("Teacher Live Transcription Started");
-    };
-
-    recognition.onresult = async (event: any) => {
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          const transcript = event.results[i][0].transcript.trim();
-          if (transcript) {
-            console.log("Saving transcript:", transcript);
-            await saveTranscriptLine(roomId, transcript, userName);
-          }
-        }
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
-    };
-
-    recognition.onend = () => {
-      if (isTranscribingRef.current) {
-        // Automatically restart if it stops unexpectedly
-        try {
-          recognition.start();
-        } catch (e) {}
-      }
-    };
-
-    try {
-      recognition.start();
-      recognitionRef.current = recognition;
-    } catch (e) {}
+    const manager = new TranscriptManager(roomId, userName);
+    manager.start();
+    transcriptManagerRef.current = manager;
 
     return () => {
-      isTranscribingRef.current = false;
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
+      if (transcriptManagerRef.current) {
+        transcriptManagerRef.current.stop();
+        transcriptManagerRef.current = null;
       }
     };
   }, [role, roomId, userName]);
@@ -358,20 +314,23 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
     if (isGenerating) return;
     setIsGenerating(true);
     
-    // Stop transcribing
-    if (recognitionRef.current) {
-      isTranscribingRef.current = false;
+    // Stop transcribing and flush remaining text
+    if (transcriptManagerRef.current) {
       try {
-        recognitionRef.current.stop();
-      } catch (e) {}
+        await transcriptManagerRef.current.stop();
+      } catch (e) {
+        console.error("Error stopping transcript manager:", e);
+      }
+      transcriptManagerRef.current = null;
     }
 
     try {
       // 1. Fetch transcripts client-side
       const transcripts = await getRoomTranscripts(roomId);
-      const transcriptsText = transcripts.length > 0
-        ? transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n")
-        : "";
+      if (transcripts.length === 0) {
+        throw new Error("No transcription data available for this classroom. Please make sure the educator has spoken during the live session before generating a quiz.");
+      }
+      const transcriptsText = transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n");
 
       // 2. Fetch generated questions from API
       const response = await fetch("/api/generate-quiz", {

@@ -191,14 +191,12 @@ export default function CreateQuizPage() {
     setSuccess("");
     setIsGenerating(true);
     try {
-      // 1. Fetch transcripts client-side if no topic is provided
-      let transcriptsText = "";
-      if (!topic.trim()) {
-        const transcripts = await getRoomTranscripts(classroom.roomCode);
-        transcriptsText = transcripts.length > 0
-          ? transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n")
-          : "";
+      // 1. Always fetch transcripts client-side
+      const transcripts = await getRoomTranscripts(classroom.roomCode);
+      if (transcripts.length === 0) {
+        throw new Error("No transcription data available for this classroom. Please make sure the educator has spoken during the live session before generating a quiz.");
       }
+      const transcriptsText = transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n");
 
       // 2. Fetch generated questions from API
       const response = await fetch("/api/generate-quiz", {
@@ -480,7 +478,7 @@ export default function CreateQuizPage() {
                   }}
                 />
                 <span style={{ fontSize: "0.775rem", color: "#968e9d", lineHeight: "1.5" }}>
-                  Leaving this input blank will prompt the LLM to generate questions based directly on the recorded live transcripts of the classroom lecture.
+                  The quiz will be generated strictly using the recorded lecture transcripts. Specify a topic or keywords to focus the questions on relevant parts of the transcript, or leave blank to cover all spoken topics.
                 </span>
               </div>
 
