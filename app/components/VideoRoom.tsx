@@ -290,38 +290,80 @@ function StageArea() {
 export default function VideoRoom({ token, url, roomId, role, userName, onLeave }: VideoRoomProps) {
   const [toasts, setToasts] = useState<DeviceToast[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [transcriptionStatus, setTranscriptionStatus] = useState<"listening" | "error" | "mocking">("listening");
+  const [isListening, setIsListening] = useState(false);
   const router = useRouter();
   const transcriptManagerRef = useRef<TranscriptManager | null>(null);
   let toastIdRef = 0;
 
-  // Initialize Speech Recognition for Teacher
+  // Perform cleanup of TranscriptManager on unmount
   useEffect(() => {
-    if (role !== "teacher" || typeof window === "undefined") return;
-
-    const manager = new TranscriptManager(roomId, userName);
-    manager.start();
-    transcriptManagerRef.current = manager;
-
     return () => {
       if (transcriptManagerRef.current) {
         transcriptManagerRef.current.stop();
         transcriptManagerRef.current = null;
       }
     };
-  }, [role, roomId, userName]);
+  }, []);
 
-  const handleEndSessionAndGenerateQuiz = async () => {
+  const handleToggleListening = async () => {
+    if (isListening) {
+      if (transcriptManagerRef.current) {
+        await transcriptManagerRef.current.stop();
+        transcriptManagerRef.current = null;
+      }
+      setIsListening(false);
+      setTranscriptionStatus("listening");
+    } else {
+      setIsListening(true);
+      const manager = new TranscriptManager(roomId, userName, (status) => {
+        setTranscriptionStatus(status);
+        if (status === "error") {
+          setIsListening(false);
+        }
+      });
+      manager.start();
+      transcriptManagerRef.current = manager;
+    }
+  };
+
+  const handleSimulateSpeech = async () => {
+    try {
+      setTranscriptionStatus("mocking");
+      const mockText = "Today we will cover the fundamentals of Physics, specifically focusing on Newton's Laws of Motion. Newton's first law states that an object at rest stays at rest, and an object in motion stays in motion unless acted upon by an external force. This is also known as the law of inertia. The second law describes force as the product of mass and acceleration, represented by the equation F equals m times a. The third law states that for every action, there is an equal and opposite reaction.";
+      
+      await saveTranscriptLine(roomId, mockText, "Educator (Simulated)");
+      alert("Simulated class lecture data successfully pushed to the database! You can now click 'Generate Quiz'.");
+    } catch (e: any) {
+      console.error(e);
+      alert("Failed to simulate speech: " + e.message);
+      setTranscriptionStatus("error");
+    }
+  };
+
+  const handleGenerateQuiz = async () => {
     if (isGenerating) return;
+
+    // Ask teacher for question count
+    const numStr = prompt("How many questions would you like the quiz to have? (1-20)", "5");
+    if (numStr === null) {
+      return; // User cancelled
+    }
+    const numQuestions = parseInt(numStr, 10);
+    if (isNaN(numQuestions) || numQuestions < 1 || numQuestions > 20) {
+      alert("Please enter a valid number of questions between 1 and 20.");
+      return;
+    }
+
     setIsGenerating(true);
     
-    // Stop transcribing and flush remaining text
-    if (transcriptManagerRef.current) {
+    // Flush remaining text from transcription manager to DB in real-time
+    if (transcriptManagerRef.current && isListening) {
       try {
-        await transcriptManagerRef.current.stop();
+        await transcriptManagerRef.current.flush();
       } catch (e) {
-        console.error("Error stopping transcript manager:", e);
+        console.error("Error flushing remaining transcript:", e);
       }
-      transcriptManagerRef.current = null;
     }
 
     try {
@@ -336,7 +378,7 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, transcriptsText }),
+        body: JSON.stringify({ roomId, numQuestions, transcriptsText }),
       });
       
       const data = await response.json();
@@ -349,10 +391,10 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
       await saveGeneratedQuiz(roomId, quizTitle, data.questions);
 
       alert("AI has generated a quiz based on your lecture! Students can now see it on their dashboard.");
-      router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
       alert("Error generating quiz: " + (err.message || "Please check console."));
+    } finally {
       setIsGenerating(false);
     }
   };
@@ -401,12 +443,57 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
     >
       {role === "teacher" && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 24px", background: "rgba(160,124,254,0.1)", borderBottom: "1px solid rgba(160,124,254,0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#cfbcff", fontSize: "0.85rem" }}>
-            <span className="material-symbols-outlined" style={{ animation: "pulse 2s infinite" }}>mic</span>
-            AI is transcribing your lecture to auto-generate a quiz...
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              onClick={handleToggleListening}
+              style={{
+                background: isListening ? "rgba(239, 68, 68, 0.2)" : "rgba(160,124,254,0.2)",
+                color: isListening ? "#f87171" : "#cfbcff",
+                border: `1px solid ${isListening ? "rgba(239, 68, 68, 0.4)" : "rgba(160,124,254,0.4)"}`,
+                borderRadius: "8px", padding: "6px 14px", fontSize: "0.85rem", fontWeight: 700,
+                cursor: "pointer", display: "flex", alignItems: "center", gap: "6px",
+                transition: "all 0.2s"
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "18px", animation: isListening ? "pulse 2s infinite" : "none" }}>
+                {isListening ? "mic_off" : "mic"}
+              </span>
+              {isListening ? "Stop Live Transcription" : "Start Live Transcription"}
+            </button>
+
+            {transcriptionStatus === "error" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f87171", fontSize: "0.85rem" }}>
+                <span className="material-symbols-outlined" style={{ animation: "pulse 2s infinite" }}>wifi_off</span>
+                Voice transcription offline (Speech API unreachable). 
+                <button 
+                  onClick={handleSimulateSpeech} 
+                  style={{
+                    background: "none", border: "none", color: "#cfbcff", textDecoration: "underline",
+                    cursor: "pointer", padding: 0, font: "inherit", fontWeight: 700, marginLeft: "4px"
+                  }}
+                >
+                  Click here to simulate class lecture data
+                </button>
+              </div>
+            ) : transcriptionStatus === "mocking" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4ade80", fontSize: "0.85rem" }}>
+                <span className="material-symbols-outlined">check_circle</span>
+                Simulated class lecture data loaded successfully.
+              </div>
+            ) : isListening ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#cfbcff", fontSize: "0.85rem" }}>
+                <span className="material-symbols-outlined" style={{ animation: "pulse 2s infinite" }}>radio_button_checked</span>
+                Recording active. Speak into your microphone...
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#cbc3d5", fontSize: "0.85rem" }}>
+                <span className="material-symbols-outlined">info</span>
+                Click start to begin transcribing your lecture notes.
+              </div>
+            )}
           </div>
           <button 
-            onClick={handleEndSessionAndGenerateQuiz}
+            onClick={handleGenerateQuiz}
             disabled={isGenerating}
             style={{
               background: "linear-gradient(90deg, #A07CFE 0%, #FE8495 50%, #FFD270 100%)",
@@ -416,7 +503,7 @@ export default function VideoRoom({ token, url, roomId, role, userName, onLeave 
             }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>auto_awesome</span>
-            {isGenerating ? "Generating AI Quiz..." : "End Session & Generate Quiz"}
+            {isGenerating ? "Generating AI Quiz..." : "Generate Quiz"}
           </button>
         </div>
       )}

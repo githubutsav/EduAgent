@@ -163,7 +163,20 @@ export async function getStudentClassrooms(studentId: string): Promise<Classroom
  * Saves a single line of transcribed text to the classroom's transcripts subcollection.
  */
 export async function saveTranscriptLine(roomId: string, text: string, speakerName: string) {
-  if (!db) return;
+  if (!db) {
+    if (typeof window !== "undefined") {
+      const key = `transcripts_${roomId}`;
+      const saved = localStorage.getItem(key);
+      const list = saved ? JSON.parse(saved) : [];
+      list.push({
+        text,
+        speakerName,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem(key, JSON.stringify(list));
+    }
+    return;
+  }
   const classQ = query(collection(db, "classrooms"), where("roomCode", "==", roomId));
   const classSnap = await getDocs(classQ);
   if (classSnap.empty) return;
@@ -182,7 +195,14 @@ export async function saveTranscriptLine(roomId: string, text: string, speakerNa
  * Gets all transcripts for a room.
  */
 export async function getRoomTranscripts(roomId: string): Promise<TranscriptLine[]> {
-  if (!db) return [];
+  if (!db) {
+    if (typeof window !== "undefined") {
+      const key = `transcripts_${roomId}`;
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  }
   const classQ = query(collection(db, "classrooms"), where("roomCode", "==", roomId));
   const classSnap = await getDocs(classQ);
   if (classSnap.empty) return [];

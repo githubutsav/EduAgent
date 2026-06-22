@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TranscriptManager } from '../lib/transcript';
 import * as firestore from '../lib/firestore';
 
-// Mock firestore functions
 vi.mock('../lib/firestore', () => ({
   saveTranscriptLine: vi.fn().mockResolvedValue(undefined),
   getRoomTranscripts: vi.fn(),
@@ -10,94 +9,86 @@ vi.mock('../lib/firestore', () => ({
 }));
 
 describe('TranscriptManager', () => {
-  let mockRecognitionInstance: any;
-  let mockSpeechRecognition: any;
+  let mockMediaRecorderInstance: any;
+  let mockMediaRecorder: any;
+  let mockGetUserMedia: any;
 
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
 
-    mockRecognitionInstance = {
+    // Mock getUserMedia
+    mockGetUserMedia = vi.fn().mockResolvedValue({
+      getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }]),
+    });
+
+    if (typeof window === 'undefined') {
+      global.window = {
+        navigator: {
+          mediaDevices: {
+            getUserMedia: mockGetUserMedia,
+          },
+        },
+      } as any;
+    } else {
+      (window as any).navigator.mediaDevices = {
+        getUserMedia: mockGetUserMedia,
+      };
+    }
+
+    // Mock MediaRecorder
+    mockMediaRecorderInstance = {
       start: vi.fn(),
-      stop: vi.fn(),
-      continuous: false,
-      interimResults: false,
-      lang: '',
-      onstart: null,
-      onresult: null,
-      onerror: null,
-      onend: null,
+      stop: vi.fn().mockImplementation(function (this: any) {
+        if (this.onstop) {
+          this.onstop();
+        }
+      }),
+      state: 'recording',
+      ondataavailable: null,
+      onstop: null,
+      mimeType: 'audio/webm',
     };
 
-    mockSpeechRecognition = vi.fn().mockImplementation(() => mockRecognitionInstance);
+    mockMediaRecorder = vi.fn().mockImplementation(() => mockMediaRecorderInstance);
+    (global as any).MediaRecorder = mockMediaRecorder;
     
-    // Inject mock into global window object
-    if (typeof window !== 'undefined') {
-      (window as any).SpeechRecognition = mockSpeechRecognition;
-    } else {
-      global.window = {
-        SpeechRecognition: mockSpeechRecognition,
-      } as any;
-    }
+    // Mock global fetch
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ text: 'Hello class' }),
+    });
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('initializes speech recognition and starts it', () => {
+  it('initializes MediaRecorder and starts it', async () => {
     const manager = new TranscriptManager('room-123', 'Dr. Smith');
-    manager.start();
+    await manager.start();
 
-    expect(mockSpeechRecognition).toHaveBeenCalled();
-    expect(mockRecognitionInstance.start).toHaveBeenCalled();
-    expect(mockRecognitionInstance.continuous).toBe(true);
-    expect(mockRecognitionInstance.lang).toBe('en-US');
+    expect(mockGetUserMedia).toHaveBeenCalledWith({ audio: true });
+    expect(mockMediaRecorder).toHaveBeenCalled();
+    expect(mockMediaRecorderInstance.start).toHaveBeenCalled();
   });
 
-  it('accumulates results and flushes after 1 minute', async () => {
+  it('rotates recording chunk and transcribes it', async () => {
     const manager = new TranscriptManager('room-123', 'Dr. Smith');
-    manager.start();
+    await manager.start();
 
-    // Simulate speech recognition result
-    const event = {
-      resultIndex: 0,
-      results: [
-        {
-          isFinal: true,
-          0: { transcript: 'Hello class' }
-        }
-      ]
-    };
-    mockRecognitionInstance.onresult(event);
+    // Simulate data available event
+    mockMediaRecorderInstance.ondataavailable({
+      data: new Blob(['audio data'], { type: 'audio/webm' }),
+    });
 
-    // Should not have saved yet
-    expect(firestore.saveTranscriptLine).not.toHaveBeenCalled();
+    // Stop and rotate
+    mockMediaRecorderInstance.stop();
 
-    // Advance time by 60 seconds (1 minute)
-    await vi.advanceTimersByTimeAsync(60000);
+    // Wait for async ticks
+    await vi.runAllTicks();
 
+    expect(global.fetch).toHaveBeenCalledWith('/api/transcribe', expect.any(Object));
     expect(firestore.saveTranscriptLine).toHaveBeenCalledWith('room-123', 'Hello class', 'Dr. Smith');
-  });
-
-  it('flushes remaining text and stops recognition on stop()', async () => {
-    const manager = new TranscriptManager('room-123', 'Dr. Smith');
-    manager.start();
-
-    const event = {
-      resultIndex: 0,
-      results: [
-        {
-          isFinal: true,
-          0: { transcript: 'Final announcement' }
-        }
-      ]
-    };
-    mockRecognitionInstance.onresult(event);
-
-    await manager.stop();
-
-    expect(mockRecognitionInstance.stop).toHaveBeenCalled();
-    expect(firestore.saveTranscriptLine).toHaveBeenCalledWith('room-123', 'Final announcement', 'Dr. Smith');
   });
 });

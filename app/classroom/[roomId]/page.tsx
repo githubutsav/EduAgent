@@ -260,7 +260,7 @@ export default function ClassroomPage() {
         }
 
         // 2. Identify role (Creator = Teacher, others = Student)
-        const userRole = roomData.createdBy === user.uid ? "teacher" : "student";
+        const userRole = (roomData.teacherId === user.uid || roomData.createdBy === user.uid) ? "teacher" : "student";
         setRole(userRole);
 
         // Load classroom quiz if it exists

@@ -31,6 +31,7 @@ export default function CreateQuizPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [hasTranscripts, setHasTranscripts] = useState<boolean | null>(null);
 
   // Authenticate and load classroom
   useEffect(() => {
@@ -75,6 +76,10 @@ export default function CreateQuizPage() {
 
         setClassroom(roomData);
         setQuizTitle(`${roomData.name} Quiz`);
+
+        // Check if transcripts exist
+        const transcripts = await getRoomTranscripts(roomCode);
+        setHasTranscripts(transcripts.length > 0);
       } catch (err: any) {
         console.error(err);
         setError(err.message || "Failed to load classroom details.");
@@ -198,13 +203,12 @@ export default function CreateQuizPage() {
       }
       const transcriptsText = transcripts.map(t => `${t.speakerName}: ${t.text}`).join("\n");
 
-      // 2. Fetch generated questions from API
+       // 2. Fetch generated questions from API
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           roomId: classroom.roomCode,
-          topic: topic.trim() || undefined,
           numQuestions: Number(numQuestions),
           transcriptsText
         })
@@ -216,7 +220,7 @@ export default function CreateQuizPage() {
       }
 
       // 3. Save quiz to Firestore client-side where we have auth credentials
-      const generatedTitle = topic.trim() ? `AI Quiz - ${topic.trim()}` : "Auto-Generated Lecture Quiz";
+      const generatedTitle = "Auto-Generated Lecture Quiz";
       await saveGeneratedQuiz(classroom.roomCode, generatedTitle, data.questions);
 
       setSuccess("Quiz generated and published successfully using AI!");
@@ -464,67 +468,93 @@ export default function CreateQuizPage() {
           {/* LLM Quiz Form */}
           {mode === "llm" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#ccc3d4" }}>QUIZ TOPIC / KEYWORDS (OPTIONAL)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Mitosis, Factoring Quadratics, Periodic Table..."
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  style={{
-                    width: "100%", padding: "14px 16px", background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
-                    color: "#e2e1eb", fontSize: "0.875rem", outline: "none"
-                  }}
-                />
-                <span style={{ fontSize: "0.775rem", color: "#968e9d", lineHeight: "1.5" }}>
-                  The quiz will be generated strictly using the recorded lecture transcripts. Specify a topic or keywords to focus the questions on relevant parts of the transcript, or leave blank to cover all spoken topics.
-                </span>
-              </div>
+              {hasTranscripts === false ? (
+                <div style={{
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.25)",
+                  borderRadius: "12px",
+                  padding: "24px",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "12px"
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "36px", color: "#f87171" }}>
+                    warning
+                  </span>
+                  <span style={{ fontSize: "0.95rem", color: "#f87171", fontWeight: 600 }}>
+                    no data about class present to create quiz
+                  </span>
+                  <span style={{ fontSize: "0.825rem", color: "#cbc3d5" }}>
+                    Please make sure the educator has spoken during the live session to record transcription data before generating a quiz using AI.
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    background: "rgba(160, 124, 254, 0.05)",
+                    border: "1px solid rgba(160, 124, 254, 0.15)",
+                    borderRadius: "8px",
+                    padding: "16px"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#cfbcff" }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>auto_awesome</span>
+                      <strong style={{ fontSize: "0.875rem" }}>Auto-Generation Mode</strong>
+                    </div>
+                    <span style={{ fontSize: "0.825rem", color: "#ccc3d4", lineHeight: "1.5" }}>
+                      This quiz will be generated using the data and lecture in the class.
+                    </span>
+                  </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#ccc3d4" }}>NUMBER OF QUESTIONS (1-20)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={numQuestions}
-                  onChange={(e) => setNumQuestions(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
-                  style={{
-                    width: "100%", padding: "14px 16px", background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
-                    color: "#e2e1eb", fontSize: "0.875rem", outline: "none"
-                  }}
-                />
-              </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "#ccc3d4" }}>NUMBER OF QUESTIONS (1-20)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={numQuestions}
+                      onChange={(e) => setNumQuestions(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                      style={{
+                        width: "100%", padding: "14px 16px", background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px",
+                        color: "#e2e1eb", fontSize: "0.875rem", outline: "none"
+                      }}
+                    />
+                  </div>
 
-              {/* Actions */}
-              <div style={{ display: "flex", gap: "16px", width: "100%", marginTop: "12px" }}>
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  disabled={isGenerating}
-                  style={{ ...ghostBtn, flex: 1, justifyContent: "center" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleGenerateLLMQuiz}
-                  disabled={isGenerating}
-                  style={{ ...primaryBtn, flex: 2, justifyContent: "center" }}
-                >
-                  {isGenerating ? (
-                    <>
-                      <div style={{ width: "16px", height: "16px", border: "2px solid #090A0F", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                      Generating AI Quiz...
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>auto_awesome</span>
-                      Generate AI Quiz
-                    </>
-                  )}
-                </button>
-              </div>
+                  {/* Actions */}
+                  <div style={{ display: "flex", gap: "16px", width: "100%", marginTop: "12px" }}>
+                    <button
+                      onClick={() => router.push("/dashboard")}
+                      disabled={isGenerating}
+                      style={{ ...ghostBtn, flex: 1, justifyContent: "center" }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleGenerateLLMQuiz}
+                      disabled={isGenerating}
+                      style={{ ...primaryBtn, flex: 2, justifyContent: "center" }}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div style={{ width: "16px", height: "16px", border: "2px solid #090A0F", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                          Generating AI Quiz...
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>auto_awesome</span>
+                          Generate AI Quiz
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
