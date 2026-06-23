@@ -60,6 +60,16 @@ export interface QuizResult {
   title?: string;
 }
 
+export interface AppNotification {
+  id?: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: any;
+}
+
 /**
  * Generate a random 6-character alphanumeric room code
  */
@@ -240,6 +250,20 @@ export async function saveGeneratedQuiz(roomId: string, title: string, questions
     questions,
     createdAt: serverTimestamp()
   });
+
+  const classData = classSnap.docs[0].data() as Classroom;
+  if (classData.students && classData.students.length > 0) {
+    for (const studentId of classData.students) {
+      await createNotification({
+        userId: studentId,
+        title: "New AI Quiz",
+        message: `Your teacher assigned a new quiz: ${title}`,
+        type: "quiz_created",
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    }
+  }
 }
 
 export async function getClassroomQuizzes(classDocId: string): Promise<Quiz[]> {
@@ -331,6 +355,16 @@ export async function submitQuizResult(
     studentName,
     score,
     answers,
+    createdAt: serverTimestamp()
+  });
+
+  const classData = classSnap.docs[0].data() as Classroom;
+  await createNotification({
+    userId: classData.teacherId,
+    title: "Quiz Completed",
+    message: `${studentName} completed a quiz with a score of ${score}%`,
+    type: "quiz_completed",
+    read: false,
     createdAt: serverTimestamp()
   });
 }
@@ -474,6 +508,20 @@ export async function saveClassroomNote(roomId: string, content: string) {
     content,
     createdAt: serverTimestamp()
   });
+
+  const classData = classSnap.docs[0].data() as Classroom;
+  if (classData.students && classData.students.length > 0) {
+    for (const studentId of classData.students) {
+      await createNotification({
+        userId: studentId,
+        title: "New Classroom Notes",
+        message: `New AI notes have been published for your class.`,
+        type: "notes_added",
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    }
+  }
 }
 
 /**
@@ -523,4 +571,40 @@ export async function updateUserProfile(uid: string, fields: any) {
   if (!db) return;
   const userDocRef = doc(db, "users", uid);
   await updateDoc(userDocRef, fields);
+}
+
+/**
+ * Creates a new notification for a user.
+ */
+export async function createNotification(notification: Omit<AppNotification, "id">) {
+  if (!db) return;
+  const notificationsRef = collection(db, "notifications");
+  await addDoc(notificationsRef, notification);
+}
+
+/**
+ * Gets all notifications for a specific user.
+ */
+export async function getUserNotifications(userId: string): Promise<AppNotification[]> {
+  if (!db) return [];
+  const notificationsRef = collection(db, "notifications");
+  const q = query(notificationsRef, where("userId", "==", userId), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as AppNotification));
+}
+
+/**
+ * Marks all unread notifications as read for a specific user.
+ */
+export async function markNotificationsAsRead(userId: string) {
+  if (!db) return;
+  const notificationsRef = collection(db, "notifications");
+  const q = query(notificationsRef, where("userId", "==", userId), where("read", "==", false));
+  const snap = await getDocs(q);
+  for (const docSnap of snap.docs) {
+    await updateDoc(docSnap.ref, { read: true });
+  }
 }
