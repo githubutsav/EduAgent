@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import DashboardNav from "../components/DashboardNav";
 import PageLoader from "../components/PageLoader";
 import SignoutConfirmModal from "../components/SignoutConfirmModal";
+import { LogOut, History, Clock, Users, BookOpen, BrainCircuit, SidebarClose, ChevronRight, Activity, TrendingUp } from "lucide-react";
 
 import { getStudentClassrooms, Classroom } from "../../lib/firestore";
 
@@ -103,98 +104,94 @@ export default function Profile() {
   const badgeBorder = isTeacher ? "rgba(160,124,254,0.25)" : "rgba(56,189,248,0.25)";
 
   return (
-    <div style={{ background: "#121318", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="flex min-h-screen flex-col bg-background-deep text-on-surface">
       <DashboardNav />
 
-      <main style={{ flex: 1, padding: "32px", maxWidth: "1440px", margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "28px" }}>
+      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 p-6 lg:p-8">
 
-        {/* ── Profile Banner ──────────────────────────────────────── */}
-        <div
-          className="glass-card"
-          style={{ borderRadius: "16px", padding: "32px", display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap", boxShadow: "0 0 40px rgba(160,124,254,0.08)" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user.displayName || "user")}`}
-            alt="Profile Avatar"
-            style={{ width: "80px", height: "80px", borderRadius: "50%", border: `3px solid ${badgeBorder}`, background: "rgba(255,255,255,0.05)" }}
-          />
-          <div style={{ flex: 1 }}>
-            <span style={{ fontSize: "0.68rem", color: badgeColor, background: badgeBg, border: `1px solid ${badgeBorder}`, padding: "3px 10px", borderRadius: "6px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              {badgeText}
-            </span>
-            <h1 className="signature-gradient" style={{ fontSize: "2rem", fontWeight: 800, margin: "8px 0 4px 0", letterSpacing: "-0.03em" }}>
-              {user.displayName || (isTeacher ? "Educator Profile" : "Student Profile")}
-            </h1>
-            <p style={{ color: "#cbc3d5", fontSize: "0.9rem", margin: 0 }}>
-              {user.email}
-            </p>
-            <button
-              onClick={() => setConfirmSignoutOpen(true)}
-              style={{ marginTop: "16px", background: "rgba(239,68,68,0.08)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "8px", padding: "8px 16px", fontSize: "0.825rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s", width: "fit-content" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.15)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>logout</span>
-              Sign Out
-            </button>
+        {/* Profile Banner */}
+        <div className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-surface/40 p-8 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user.displayName || "user")}`}
+              alt="Profile Avatar"
+              className="h-20 w-20 shrink-0 rounded-full border-4 object-cover"
+              style={{ borderColor: badgeBorder, backgroundColor: "rgba(255,255,255,0.05)" }}
+            />
+            <div className="flex flex-col items-start gap-1">
+              <span className="rounded-md border px-2.5 py-1 text-xs font-bold uppercase tracking-wider" style={{ color: badgeColor, backgroundColor: badgeBg, borderColor: badgeBorder }}>
+                {badgeText}
+              </span>
+              <h1 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
+                {user.displayName || (isTeacher ? "Educator Profile" : "Student Profile")}
+              </h1>
+              <p className="text-sm text-on-surface-variant">
+                {user.email}
+              </p>
+              <button
+                onClick={() => setConfirmSignoutOpen(true)}
+                className="mt-3 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/20"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
           </div>
 
           {/* Stats */}
-          <div style={{ display: "flex", gap: "24px", background: "rgba(255,255,255,0.02)", padding: "20px 28px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex shrink-0 items-center gap-6 rounded-xl border border-white/5 bg-black/20 p-5 backdrop-blur-sm sm:gap-8">
             {profileStats.map((s, i) => (
-              <div key={s.label} style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                  <span style={{ fontSize: "1.5rem", fontWeight: 800, color: s.color }}>{s.value}</span>
-                  <span style={{ fontSize: "0.65rem", color: "#948e9f", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</span>
+              <div key={s.label} className="flex items-center gap-6 sm:gap-8">
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <span className="text-3xl font-extrabold" style={{ color: s.color }}>{s.value}</span>
+                  <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">{s.label}</span>
                 </div>
                 {i < profileStats.length - 1 && (
-                  <div style={{ height: "36px", width: "1px", background: "rgba(255,255,255,0.08)" }} />
+                  <div className="h-10 w-px bg-white/10" />
                 )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Dynamic Content based on Role ───────────────────────────── */}
+        {/* Dynamic Content based on Role */}
         {isTeacher ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "28px" }} className="lg:grid-cols-12">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
             {/* Past Sessions List */}
-            <div className="glass-card lg:col-span-5" style={{ borderRadius: "16px", padding: "28px", display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div className="flex flex-col gap-5 rounded-2xl border border-white/5 bg-surface p-6 shadow-sm lg:col-span-5">
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                  <span className="material-symbols-outlined" style={{ color: "#cfbcff", fontSize: "20px" }}>history</span>
-                  <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#e3e1e9", margin: 0 }}>Past Meeting Archive</h3>
+                <div className="mb-1 flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-bold text-white">Past Meeting Archive</h3>
                 </div>
-                <p style={{ fontSize: "0.825rem", color: "#cbc3d5", margin: 0 }}>Select a session to inspect student performance.</p>
+                <p className="text-sm text-on-surface-variant">Select a session to inspect student performance.</p>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-3">
                 {mockPastMeetings.map((mtg) => {
                   const isSelected = selectedMeeting?.id === mtg.id;
                   return (
                     <div
                       key={mtg.id}
                       onClick={() => setSelectedMeeting(mtg)}
-                      style={{
-                        background: isSelected ? "rgba(160,124,254,0.07)" : "rgba(255,255,255,0.02)",
-                        border: `1px solid ${isSelected ? "rgba(160,124,254,0.3)" : "rgba(255,255,255,0.05)"}`,
-                        borderRadius: "10px", padding: "16px", cursor: "pointer", transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-                      onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                      className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                        isSelected 
+                        ? "border-primary/30 bg-primary/10 shadow-inner" 
+                        : "border-white/5 bg-white/5 hover:bg-white/10"
+                      }`}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                        <h4 style={{ fontSize: "0.9rem", fontWeight: 600, color: isSelected ? "#cfbcff" : "#e3e1e9", margin: 0, lineHeight: "1.4" }}>{mtg.title}</h4>
-                        <span style={{ fontSize: "0.72rem", color: "#948e9f", whiteSpace: "nowrap" }}>{mtg.date}</span>
+                      <div className="flex items-start justify-between gap-3">
+                        <h4 className={`text-sm font-bold leading-snug ${isSelected ? "text-primary" : "text-white"}`}>{mtg.title}</h4>
+                        <span className="shrink-0 text-xs text-on-surface-variant">{mtg.date}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px", fontSize: "0.75rem", color: "#cbc3d5" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#948e9f" }}>schedule</span>
+                      <div className="mt-3 flex items-center justify-between text-xs text-on-surface-variant">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-on-surface-variant/70" />
                           {mtg.duration}
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#948e9f" }}>group</span>
+                        <div className="flex items-center gap-1.5">
+                          <Users className="h-3.5 w-3.5 text-on-surface-variant/70" />
                           {mtg.participantsCount} participants
                         </div>
                       </div>
@@ -205,49 +202,49 @@ export default function Profile() {
             </div>
 
             {/* Session Detail */}
-            <div className="glass-card lg:col-span-7" style={{ borderRadius: "16px", padding: "28px", display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div className="flex flex-col gap-6 rounded-2xl border border-white/5 bg-surface p-6 shadow-sm lg:col-span-7">
               {selectedMeeting ? (
                 <>
                   <div>
-                    <span style={{ fontSize: "0.68rem", color: "#cfbcff", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>Session Report</span>
-                    <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#e3e1e9", margin: "4px 0" }}>{selectedMeeting.title}</h2>
-                    <p style={{ fontSize: "0.825rem", color: "#948e9f", margin: 0 }}>
-                      Room: <code style={{ color: "#cfbcff", fontSize: "0.8rem", background: "rgba(160,124,254,0.08)", padding: "2px 6px", borderRadius: "4px" }}>{selectedMeeting.code}</code>
-                      {" "} · {selectedMeeting.date}
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary">Session Report</span>
+                    <h2 className="mt-1 text-xl font-bold text-white">{selectedMeeting.title}</h2>
+                    <p className="mt-1 flex items-center gap-2 text-sm text-on-surface-variant">
+                      Room: <code className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-xs text-primary">{selectedMeeting.code}</code>
+                      <span className="text-white/20">•</span> {selectedMeeting.date}
                     </p>
                   </div>
 
                   {/* AI Summary */}
-                  <div style={{ background: "rgba(160,124,254,0.05)", border: "1px solid rgba(160,124,254,0.2)", borderRadius: "10px", padding: "16px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                      <span className="material-symbols-outlined" style={{ color: "#cfbcff", fontSize: "18px" }}>psychology</span>
-                      <strong style={{ fontSize: "0.825rem", color: "#cfbcff" }}>AI Classroom Summary & Recommendations</strong>
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+                    <div className="mb-2 flex items-center gap-2">
+                      <BrainCircuit className="h-4 w-4 text-primary" />
+                      <strong className="text-sm text-primary">AI Classroom Summary & Recommendations</strong>
                     </div>
-                    <p style={{ fontSize: "0.825rem", color: "#cbc3d5", lineHeight: "1.6", margin: 0 }}>{selectedMeeting.aiSummary}</p>
+                    <p className="text-sm leading-relaxed text-on-surface-variant">{selectedMeeting.aiSummary}</p>
                   </div>
 
                   {/* Participant list */}
                   <div>
-                    <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#e3e1e9", margin: "0 0 16px 0" }}>Participant Performance Log</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <h3 className="mb-4 text-base font-bold text-white">Participant Performance Log</h3>
+                    <div className="flex flex-col gap-3">
                       {selectedMeeting.participants.map((p, i) => (
-                        <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "10px", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "180px" }}>
+                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/5 p-4">
+                          <div className="flex w-full sm:w-48 shrink-0 items-center gap-3">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(p.avatarSeed)}`} alt={p.name} style={{ width: "32px", height: "32px", borderRadius: "50%", background: "rgba(160,124,254,0.08)", border: "1px solid rgba(160,124,254,0.2)" }} />
-                            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#e3e1e9" }}>{p.name}</span>
+                            <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(p.avatarSeed)}`} alt={p.name} className="h-9 w-9 rounded-full border border-primary/20 bg-primary/10 object-cover" />
+                            <span className="text-sm font-bold text-white">{p.name}</span>
                           </div>
-                          <div style={{ flex: 1, minWidth: "200px" }}>
-                            <span style={{ fontSize: "0.8rem", color: "#cbc3d5", lineHeight: "1.4" }}>{p.insight}</span>
+                          <div className="flex-1 min-w-[200px]">
+                            <span className="text-xs leading-relaxed text-on-surface-variant">{p.insight}</span>
                           </div>
-                          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                              <span style={{ fontSize: "0.63rem", color: "#948e9f", fontWeight: 600, textTransform: "uppercase" }}>Engagement</span>
-                              <span style={{ fontSize: "0.825rem", color: "#cfbcff", fontWeight: 600 }}>{p.engagement}</span>
+                          <div className="flex shrink-0 items-center justify-between sm:justify-end gap-6 sm:w-32">
+                            <div className="flex flex-col text-left sm:text-right">
+                              <span className="text-[0.6rem] font-bold uppercase text-on-surface-variant">Engagement</span>
+                              <span className="text-sm font-bold text-primary">{p.engagement}</span>
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                              <span style={{ fontSize: "0.63rem", color: "#948e9f", fontWeight: 600, textTransform: "uppercase" }}>Score</span>
-                              <span style={{ fontSize: "0.825rem", color: "#4ade80", fontWeight: 600 }}>{p.performance}</span>
+                            <div className="flex flex-col text-left sm:text-right">
+                              <span className="text-[0.6rem] font-bold uppercase text-on-surface-variant">Score</span>
+                              <span className="text-sm font-bold text-emerald-400">{p.performance}</span>
                             </div>
                           </div>
                         </div>
@@ -256,53 +253,56 @@ export default function Profile() {
                   </div>
                 </>
               ) : (
-                <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", height: "200px", color: "#948e9f", fontSize: "0.875rem", flexDirection: "column", gap: "10px" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: "36px" }}>view_sidebar</span>
-                  Select a past session to view logs.
+                <div className="flex h-64 flex-col items-center justify-center gap-3 text-on-surface-variant">
+                  <SidebarClose className="h-10 w-10 opacity-50" />
+                  <span className="text-sm">Select a past session to view logs.</span>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="glass-card" style={{ borderRadius: "16px", padding: "28px", display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className="flex flex-col gap-6 rounded-2xl border border-white/5 bg-surface p-6 shadow-sm">
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                <span className="material-symbols-outlined" style={{ color: "#38bdf8", fontSize: "20px" }}>auto_stories</span>
-                <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#e3e1e9", margin: 0 }}>Enrolled Classes</h3>
+              <div className="mb-1 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-secondary" />
+                <h3 className="text-lg font-bold text-white">Enrolled Classes</h3>
               </div>
-              <p style={{ fontSize: "0.825rem", color: "#cbc3d5", margin: 0 }}>Manage your current curriculum.</p>
+              <p className="text-sm text-on-surface-variant">Manage your current curriculum.</p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {classrooms.length > 0 ? classrooms.map(course => (
-                <div key={course.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div key={course.id} className="group flex flex-col gap-5 rounded-xl border border-white/5 bg-white/5 p-5 transition-all hover:bg-white/10 hover:border-secondary/30">
                   <div>
-                    <h4 style={{ fontSize: "1.05rem", fontWeight: 600, color: "#e3e1e9", margin: "0 0 4px 0" }}>{course.name}</h4>
-                    <p style={{ fontSize: "0.8rem", color: "#948e9f", margin: 0 }}>Instructor: {course.teacherName}</p>
+                    <h4 className="text-base font-bold text-white">{course.name}</h4>
+                    <p className="mt-0.5 text-xs text-on-surface-variant">Instructor: {course.teacherName}</p>
                   </div>
                   
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#cbc3d5", marginBottom: "6px" }}>
-                      <span>Course Progress</span>
-                      <span>85%</span>
+                    <div className="mb-2 flex justify-between text-xs text-on-surface-variant">
+                      <span className="font-semibold">Course Progress</span>
+                      <span className="font-bold">85%</span>
                     </div>
-                    <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.05)", borderRadius: "3px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `85%`, background: "#38bdf8", borderRadius: "3px" }} />
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/40">
+                      <div className="h-full rounded-full bg-secondary" style={{ width: `85%` }} />
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "auto" }}>
+                  <div className="mt-auto flex items-end justify-between pt-2">
                     <div>
-                      <span style={{ fontSize: "0.65rem", color: "#948e9f", textTransform: "uppercase", fontWeight: 600 }}>Next Up</span>
-                      <p style={{ fontSize: "0.8rem", color: "#e3e1e9", margin: "2px 0 0 0" }}>Pending Assignments</p>
+                      <span className="text-[0.65rem] font-bold uppercase tracking-wider text-on-surface-variant">Next Up</span>
+                      <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-white">
+                        Pending Assignments
+                        <ChevronRight className="h-3.5 w-3.5 text-on-surface-variant/50 group-hover:text-white transition-colors" />
+                      </p>
                     </div>
-                    <div style={{ background: "rgba(74, 222, 128, 0.1)", color: "#4ade80", padding: "6px 12px", borderRadius: "8px", fontWeight: 700, fontSize: "0.9rem" }}>
+                    <div className="rounded-lg bg-emerald-400/10 px-3 py-1.5 text-sm font-extrabold text-emerald-400">
                       A-
                     </div>
                   </div>
                 </div>
               )) : (
-                <div style={{ padding: "30px", textAlign: "center", color: "#948e9f", fontSize: "0.9rem", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "10px", marginTop: "10px", gridColumn: "1 / -1" }}>
+                <div className="col-span-full flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-on-surface-variant">
                   You haven't enrolled in any classrooms yet. Use a code from your teacher to join on the Dashboard!
                 </div>
               )}
@@ -312,8 +312,8 @@ export default function Profile() {
 
       </main>
 
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "20px 32px", textAlign: "center", marginTop: "auto" }}>
-        <span style={{ fontSize: "0.72rem", color: "#948e9f" }}>© 2026 EduAgent AI. All rights reserved.</span>
+      <footer className="mt-auto border-t border-white/5 py-6 text-center text-xs text-on-surface-variant">
+        © 2026 EduAgent AI. All rights reserved.
       </footer>
 
       <SignoutConfirmModal
