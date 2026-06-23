@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 import DashboardNav from "../components/DashboardNav";
 import PageLoader from "../components/PageLoader";
 import SignoutConfirmModal from "../components/SignoutConfirmModal";
-import { LogOut, History, Clock, Users, BookOpen, BrainCircuit, SidebarClose, ChevronRight, Activity, TrendingUp } from "lucide-react";
-
-import { getStudentClassrooms, Classroom } from "../../lib/firestore";
+import { LogOut, History, Clock, Users, BookOpen, BrainCircuit, SidebarClose, ChevronRight, Activity, TrendingUp, Edit3 } from "lucide-react";
+import { useAppStore } from "../store/useAppStore";
 
 // ── Teacher Types ──
 interface ParticipantPerformance {
@@ -30,71 +29,74 @@ interface PastMeeting {
   aiSummary: string;
 }
 
-const mockPastMeetings: PastMeeting[] = [
-  {
-    id: "m-1",
-    title: "Algebraic Foundations & Quadratic Equations",
-    date: "June 17, 2026",
-    duration: "45 mins",
-    code: "classroom-math-a3f9",
-    participantsCount: 4,
-    aiSummary: "The class demonstrated high engagement during the interactive quadratic visualizer sandbox. Sophia Martinez struggled with quadratic formulas but showed progress after assignment modifications. Recommended assignment: 3 supplementary exercises on vertex calculations.",
-    participants: [
-      { name: "Emily Watson", avatarSeed: "Emily", engagement: "98%", performance: "95%", insight: "Demonstrated full mastery of factoring." },
-      { name: "Marcus Chen", avatarSeed: "Marcus", engagement: "92%", performance: "88%", insight: "Active participation in solving equations." },
-      { name: "Sophia Martinez", avatarSeed: "Sophia", engagement: "85%", performance: "74%", insight: "Requires follow-up review on vertex formula." },
-      { name: "Oliver Bennett", avatarSeed: "Oliver", engagement: "64%", performance: "60%", insight: "Low attention during lecture; active in sandbox." },
-    ],
-  },
-  {
-    id: "m-2",
-    title: "Introductory Chemistry Lab: Covalent Bonding",
-    date: "June 15, 2026",
-    duration: "60 mins",
-    code: "classroom-chem-982c",
-    participantsCount: 5,
-    aiSummary: "Very successful session. Everyone connected and collaborated on the virtual molecule builder. Liam O'Connor and Emily Watson completed all advanced combinations. Assign lesson 4 overview as next homework.",
-    participants: [
-      { name: "Emily Watson", avatarSeed: "Emily", engagement: "100%", performance: "100%", insight: "Excellent speed in compound construction." },
-      { name: "Marcus Chen", avatarSeed: "Marcus", engagement: "90%", performance: "85%", insight: "Followed safety simulation steps correctly." },
-      { name: "Sophia Martinez", avatarSeed: "Sophia", engagement: "88%", performance: "80%", insight: "Constructed standard covalent bonds correctly." },
-      { name: "Oliver Bennett", avatarSeed: "Oliver", engagement: "72%", performance: "65%", insight: "Completed basic compounds; missed review session." },
-      { name: "Liam O'Connor", avatarSeed: "Liam", engagement: "96%", performance: "95%", insight: "Helped peers solve compound structure puzzles." },
-    ],
-  },
-];
+
 
 export default function Profile() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
-  const [selectedMeeting, setSelectedMeeting] = useState<PastMeeting | null>(mockPastMeetings[0]);
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const { userProfile, studentData, teacherData } = useAppStore();
+  const { classrooms: studentClassrooms, pastQuizzes } = studentData;
+  const { classrooms: teacherClassrooms, studentAnalytics } = teacherData;
+
+  const pastClassroomSessions: PastMeeting[] = teacherClassrooms.map((c, i) => ({
+    id: c.id,
+    title: c.name + " Assessments",
+    date: "Active",
+    duration: "Live",
+    code: c.roomCode,
+    participantsCount: c.students ? c.students.length : 0,
+    aiSummary: `Classroom dynamic summary for ${c.name}. Engagement is steady. Students are actively tracking their progress through upcoming assessments.`,
+    participants: studentAnalytics.slice(0, 5).map(s => ({
+      name: s.studentName || "Student",
+      avatarSeed: s.studentName || "S",
+      engagement: s.engagement || "0%",
+      performance: s.progress ? `${s.progress}%` : "0%",
+      insight: s.lastAction || "No recent activity"
+    }))
+  }));
+
+  const [selectedMeeting, setSelectedMeeting] = useState<PastMeeting | null>(null);
   const [confirmSignoutOpen, setConfirmSignoutOpen] = useState(false);
+
+  useEffect(() => {
+    if (pastClassroomSessions.length > 0 && !selectedMeeting) {
+      setSelectedMeeting(pastClassroomSessions[0]);
+    }
+  }, [pastClassroomSessions, selectedMeeting]);
 
   useEffect(() => {
     if (!loading && !user) router.push("/");
   }, [user, loading, router]);
 
-  useEffect(() => {
-    if (user && user.role === "student") {
-      getStudentClassrooms(user.uid).then(setClassrooms).catch(console.error);
-    }
-  }, [user]);
-
   if (loading || !user) return <PageLoader message="Loading your profile..." />;
 
-  const isTeacher = user.role === "teacher" || !user.role; // Default legacy accounts to teacher if role missing
-  
+  const isTeacher = userProfile?.role === "teacher" || (!userProfile?.role && user?.role === "teacher");
+
+  const avgEngagementStr = studentAnalytics.length > 0 
+    ? Math.round(studentAnalytics.reduce((sum: number, s: any) => sum + parseInt(s.engagement || "0"), 0) / studentAnalytics.length) + "%"
+    : "0%";
+
   const teacherStats = [
-    { value: "24", label: "Sessions Hosted", color: "#cfbcff" },
-    { value: "18.5h", label: "Classroom Hours", color: "#cfbcff" },
-    { value: "92%", label: "Avg Engagement", color: "#4ade80" },
+    { value: teacherClassrooms.length.toString(), label: "Sessions Hosted", color: "#cfbcff" },
+    { value: studentAnalytics.length.toString(), label: "Students Tracked", color: "#cfbcff" },
+    { value: avgEngagementStr, label: "Avg Engagement", color: "#4ade80" },
   ];
 
+  const avgScore = pastQuizzes.length > 0 
+    ? Math.round(pastQuizzes.reduce((sum, q) => sum + q.score, 0) / pastQuizzes.length) 
+    : 0;
+  
+  let averageGrade = "N/A";
+  if (avgScore >= 90) averageGrade = "A";
+  else if (avgScore >= 80) averageGrade = "B";
+  else if (avgScore >= 70) averageGrade = "C";
+  else if (avgScore >= 60) averageGrade = "D";
+  else if (avgScore > 0) averageGrade = "F";
+
   const studentStats = [
-    { value: "3", label: "Active Courses", color: "#38bdf8" },
-    { value: "14", label: "Day Streak", color: "#f59e0b" },
-    { value: "A-", label: "Average Grade", color: "#4ade80" },
+    { value: studentClassrooms.length.toString(), label: "Active Courses", color: "#38bdf8" },
+    { value: pastQuizzes.length.toString(), label: "Completed Quizzes", color: "#f59e0b" },
+    { value: averageGrade, label: "Average Grade", color: "#4ade80" },
   ];
 
   const profileStats = isTeacher ? teacherStats : studentStats;
@@ -129,13 +131,16 @@ export default function Profile() {
               <p className="text-sm text-on-surface-variant">
                 {user.email}
               </p>
-              <button
-                onClick={() => setConfirmSignoutOpen(true)}
-                className="mt-3 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/20"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
+              <div className="flex items-center gap-3 mt-3">
+
+                <button
+                  onClick={() => setConfirmSignoutOpen(true)}
+                  className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/20"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
 
@@ -163,13 +168,15 @@ export default function Profile() {
               <div>
                 <div className="mb-1 flex items-center gap-2">
                   <History className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-bold text-white">Past Meeting Archive</h3>
+                  <h3 className="text-base font-bold text-white">Recent Assessments Archive</h3>
                 </div>
                 <p className="text-sm text-on-surface-variant">Select a session to inspect student performance.</p>
               </div>
 
-              <div className="flex flex-col gap-3">
-                {mockPastMeetings.map((mtg) => {
+              <div className="flex h-[500px] flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar">
+                {pastClassroomSessions.length === 0 ? (
+                  <div className="text-sm text-on-surface-variant">No active classroom sessions found.</div>
+                ) : pastClassroomSessions.map(mtg => {
                   const isSelected = selectedMeeting?.id === mtg.id;
                   return (
                     <div
@@ -271,7 +278,7 @@ export default function Profile() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {classrooms.length > 0 ? classrooms.map(course => (
+              {studentClassrooms.length > 0 ? studentClassrooms.map(course => (
                 <div key={course.id} className="group flex flex-col gap-5 rounded-xl border border-white/5 bg-white/5 p-5 transition-all hover:bg-white/10 hover:border-secondary/30">
                   <div>
                     <h4 className="text-base font-bold text-white">{course.name}</h4>
@@ -280,11 +287,11 @@ export default function Profile() {
                   
                   <div>
                     <div className="mb-2 flex justify-between text-xs text-on-surface-variant">
-                      <span className="font-semibold">Course Progress</span>
-                      <span className="font-bold">85%</span>
+                      <span className="font-semibold">Avg Score</span>
+                      <span className="font-bold">{avgScore}%</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/40">
-                      <div className="h-full rounded-full bg-secondary" style={{ width: `85%` }} />
+                      <div className="h-full rounded-full bg-secondary" style={{ width: `${avgScore}%` }} />
                     </div>
                   </div>
 
@@ -297,7 +304,7 @@ export default function Profile() {
                       </p>
                     </div>
                     <div className="rounded-lg bg-emerald-400/10 px-3 py-1.5 text-sm font-extrabold text-emerald-400">
-                      A-
+                      {averageGrade}
                     </div>
                   </div>
                 </div>
@@ -325,6 +332,8 @@ export default function Profile() {
           router.push("/");
         }}
       />
+
+
     </div>
   );
 }

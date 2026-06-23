@@ -13,16 +13,18 @@ export default function Navbar() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"login" | "signup">("login");
   const [modalEmail, setModalEmail] = useState("");
+  const [modalRole, setModalRole] = useState<"teacher" | "student" | undefined>(undefined);
   const [confirmSignoutOpen, setConfirmSignoutOpen] = useState(false);
 
   const openLogin = () => { setModalTab("login"); setModalEmail(""); setModalOpen(true); };
 
   useEffect(() => {
     const handleOpenAuth = (e: Event) => {
-      const customEvent = e as CustomEvent<{ tab?: "login" | "signup"; email?: string }>;
-      const { tab = "login", email = "" } = customEvent.detail || {};
+      const customEvent = e as CustomEvent<{ tab?: "login" | "signup"; email?: string; defaultRole?: "teacher" | "student" }>;
+      const { tab = "login", email = "", defaultRole } = customEvent.detail || {};
       setModalTab(tab);
       setModalEmail(email);
+      setModalRole(defaultRole);
       setModalOpen(true);
     };
     window.addEventListener("open-auth-modal", handleOpenAuth);
@@ -96,6 +98,7 @@ export default function Navbar() {
         onClose={() => setModalOpen(false)}
         initialTab={modalTab}
         initialEmail={modalEmail}
+        initialRole={modalRole}
       />
 
       {/* Sign Out Confirmation Modal */}

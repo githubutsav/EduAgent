@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 export default function HeroSection() {
   const { user } = useAuth();
   const router = useRouter();
-  const [emailInput, setEmailInput] = useState("");
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -36,13 +35,13 @@ export default function HeroSection() {
     return () => document.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleJoinMovement = () => {
+  const handleOpenAuth = (role?: string) => {
     if (user) {
       router.push("/dashboard");
     } else {
       window.dispatchEvent(
         new CustomEvent("open-auth-modal", {
-          detail: { tab: "login", email: emailInput },
+          detail: { tab: "signup", defaultRole: role },
         })
       );
     }
@@ -76,18 +75,19 @@ export default function HeroSection() {
         </p>
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 max-w-xl mx-auto mb-16">
-          <input
-            className="w-full h-14 px-6 rounded-full bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all text-on-surface"
-            placeholder="Enter your school email"
-            type="email"
-            value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
-          />
           <button
-            onClick={handleJoinMovement}
-            className="w-full md:w-auto h-14 px-8 rounded-full gradient-button text-[#090A0F] font-semibold whitespace-nowrap hover:scale-105 transition-transform"
+            onClick={() => handleOpenAuth("teacher")}
+            className="w-full md:w-auto h-14 px-8 rounded-full gradient-button text-[#090A0F] font-bold whitespace-nowrap hover:scale-105 transition-transform flex items-center justify-center gap-2"
           >
-            Join the Movement
+            <span className="material-symbols-outlined text-[20px]">school</span>
+            Start Teaching for Free
+          </button>
+          <button
+            onClick={() => handleOpenAuth("student")}
+            className="w-full md:w-auto h-14 px-8 rounded-full bg-white/5 border border-white/10 text-white font-bold whitespace-nowrap hover:bg-white/10 hover:scale-105 transition-all flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">person</span>
+            Join as Student
           </button>
         </div>
       </div>

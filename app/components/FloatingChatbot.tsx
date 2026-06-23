@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, X, MessageSquare, Sparkles } from "lucide-react";
+import { Send, X, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function FloatingChatbot() {
@@ -9,16 +9,14 @@ export default function FloatingChatbot() {
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<{ role: "ai" | "user"; text: string }[]>([
-    { role: "ai", text: "Hi! I'm your AI Study Assistant. What are we learning today?" },
+    { role: "ai", text: "Hi! I'm EduAgent AI, your personal study assistant. What are we learning today?" },
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    if (isOpen) scrollToBottom();
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isOpen, isTyping]);
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -90,112 +88,128 @@ export default function FloatingChatbot() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
             transition={{ duration: 0.2 }}
-            className="mb-4 flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface shadow-2xl backdrop-blur-xl sm:w-[400px]"
+            style={{ display: "flex", flexDirection: "column", height: "500px", width: "360px" }}
+            className="mb-4 rounded-3xl border border-white/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-5 py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-container to-secondary shadow-inner">
-                  <Bot className="h-5 w-5 text-background-deep" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-white">AI Assistant</h3>
-                  <p className="text-xs text-on-surface-variant flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-tertiary" /> Always here to help
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="rounded-full p-2 text-on-surface-variant transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Messages Area */}
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+            {/* Messages Area — grows to fill space */}
+            <div
+              style={{ flex: "1 1 0", overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}
+            >
               {messages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div key={idx} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                      msg.role === "user"
-                        ? "bg-primary text-background-deep rounded-br-sm"
-                        : "bg-white/5 text-on-surface rounded-bl-sm border border-white/10"
-                    }`}
+                    style={{
+                      maxWidth: "85%",
+                      padding: "12px 20px",
+                      fontSize: "0.9rem",
+                      lineHeight: "1.6",
+                      borderRadius: msg.role === "user" ? "24px 24px 4px 24px" : "24px 24px 24px 4px",
+                      background: msg.role === "user"
+                        ? "linear-gradient(135deg, #7c3aed, #6d28d9)"
+                        : "rgba(255,255,255,0.1)",
+                      color: "white",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      backdropFilter: "blur(8px)",
+                    }}
                   >
                     {msg.text}
                   </div>
                 </div>
               ))}
               {isTyping && (
-                <div className="flex justify-start">
-                  <div className="flex max-w-[85%] items-center gap-1 rounded-2xl rounded-bl-sm border border-white/10 bg-white/5 px-4 py-3 text-sm text-on-surface-variant">
-                    <motion.div
-                      className="h-1.5 w-1.5 rounded-full bg-on-surface-variant"
-                      animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-                    />
-                    <motion.div
-                      className="h-1.5 w-1.5 rounded-full bg-on-surface-variant"
-                      animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
-                    />
-                    <motion.div
-                      className="h-1.5 w-1.5 rounded-full bg-on-surface-variant"
-                      animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
-                    />
+                <div style={{ display: "flex" }}>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center", padding: "14px 20px", borderRadius: "24px 24px 24px 4px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <motion.div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(124,58,237,0.8)" }} animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} />
+                    <motion.div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(124,58,237,0.8)" }} animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} />
+                    <motion.div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(124,58,237,0.8)" }} animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} />
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <form onSubmit={handleChatSubmit} className="border-t border-white/10 bg-background/50 p-4">
-              <div className="relative flex items-center">
+            {/* Input — fixed at bottom, never grows */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: "16px",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(0,0,0,0.3)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <form onSubmit={handleChatSubmit} style={{ position: "relative", display: "flex", alignItems: "center" }}>
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Ask me anything..."
-                  className="w-full rounded-full border border-white/10 bg-white/5 py-3 pl-5 pr-12 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-primary/50 focus:bg-white/10"
+                  style={{
+                    width: "100%",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.05)",
+                    padding: "14px 56px 14px 20px",
+                    fontSize: "0.875rem",
+                    color: "white",
+                    outline: "none",
+                  }}
                 />
                 <button
                   type="submit"
                   disabled={isTyping || !chatInput.trim()}
-                  className="absolute right-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-background-deep transition-transform hover:scale-105 disabled:scale-100 disabled:opacity-50"
+                  style={{
+                    position: "absolute",
+                    right: "6px",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "white",
+                    opacity: isTyping || !chatInput.trim() ? 0.5 : 1,
+                  }}
                 >
-                  <Send className="h-4 w-4 -ml-0.5" strokeWidth={2.5} />
+                  <Send style={{ width: 16, height: 16 }} strokeWidth={2.5} />
                 </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Toggle button */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className={`group flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all duration-300 ${
-          isOpen ? "bg-surface border border-white/10" : "bg-gradient-to-tr from-primary-container to-secondary"
-        }`}
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          background: isOpen ? "rgba(0,0,0,0.4)" : "linear-gradient(135deg, #7c3aed, #4ade80)",
+          border: isOpen ? "1px solid rgba(255,255,255,0.1)" : "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: "white",
+          boxShadow: "0 0 30px rgba(124,58,237,0.3)",
+        }}
       >
-        {isOpen ? (
-          <X className="h-6 w-6 text-white" />
-        ) : (
-          <MessageSquare className="h-6 w-6 text-background-deep" />
-        )}
+        {isOpen ? <X style={{ width: 24, height: 24 }} /> : <MessageSquare style={{ width: 24, height: 24 }} />}
       </motion.button>
     </div>
   );

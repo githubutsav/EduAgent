@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { useAuth } from "./context/AuthContext";
+import { useRouter } from "next/navigation";
 import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
 import TestimonialsMarquee from "./components/TestimonialsMarquee";
@@ -14,6 +16,15 @@ import CtaSection from "./components/CtaSection";
 import Footer from "./components/Footer";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
+
   useEffect(() => {
     // Global IntersectionObserver for .fade-up elements
     const observer = new IntersectionObserver(
@@ -31,6 +42,8 @@ export default function Home() {
 
     return () => observer.disconnect();
   }, []);
+
+  if (user) return null;
 
   return (
     <main className="bg-background text-on-surface font-sans overflow-x-hidden">
