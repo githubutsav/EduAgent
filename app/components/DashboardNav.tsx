@@ -5,6 +5,13 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import SignoutConfirmModal from "./SignoutConfirmModal";
+import { GraduationCap, LayoutDashboard, User as UserIcon, LogOut } from "lucide-react";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export default function DashboardNav() {
   const { user, logout, isDemoMode } = useAuth();
@@ -13,172 +20,91 @@ export default function DashboardNav() {
   const [confirmSignoutOpen, setConfirmSignoutOpen] = useState(false);
 
   const navLinks = [
-    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
-    { label: "Profile", href: "/profile", icon: "person" },
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Profile", href: "/profile", icon: UserIcon },
   ];
 
   return (
     <>
-      <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-        background: "rgba(18, 19, 24, 0.85)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0 32px",
-          height: "68px",
-          maxWidth: "1440px",
-          margin: "0 auto",
-          width: "100%",
-        }}
-      >
-        {/* Brand */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
-          <div
-            className="gradient-button"
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ color: "#090A0F", fontSize: "18px", fontVariationSettings: "'FILL' 1" }}
+      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-surface/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6 lg:px-8">
+          
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-primary-container via-secondary to-tertiary shadow-sm">
+              <GraduationCap className="h-5 w-5 text-background-deep" strokeWidth={2.5} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[1.1rem] font-bold text-on-surface tracking-tight">
+                EduAgent
+              </span>
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[0.65rem] font-semibold text-primary">
+                Workspace
+              </span>
+            </div>
+          </Link>
+
+          {/* Nav Links */}
+          <nav className="flex items-center gap-1.5">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
+                    isActive 
+                      ? "bg-primary/10 text-primary" 
+                      : "text-on-surface-variant hover:bg-white/5 hover:text-on-surface"
+                  )}
+                >
+                  <Icon className="h-4 w-4" strokeWidth={isActive ? 2.5 : 2} />
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User + Actions */}
+          <div className="flex items-center gap-4">
+            {isDemoMode && (
+              <span className="rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                Demo Mode
+              </span>
+            )}
+
+            {/* Avatar + Name */}
+            <div className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={
+                  user?.photoURL ||
+                  `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user?.displayName || "user")}`
+                }
+                alt="Profile"
+                className="h-8 w-8 rounded-full border border-primary/20 bg-white/5 object-cover"
+              />
+              <span className="text-sm font-semibold text-on-surface hidden sm:block">
+                {user?.displayName?.split(" ")[0] || "Educator"}
+              </span>
+            </div>
+
+            <div className="h-4 w-px bg-white/10" />
+
+            {/* Sign Out */}
+            <button
+              onClick={() => setConfirmSignoutOpen(true)}
+              className="flex items-center gap-2 rounded-md border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300"
             >
-              school
-            </span>
+              <LogOut className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
-          <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#e3e1e9", letterSpacing: "-0.02em" }}>
-            EduAgent
-          </span>
-          <span
-            style={{
-              fontSize: "0.65rem",
-              background: "rgba(207, 188, 255, 0.1)",
-              color: "#cfbcff",
-              padding: "2px 8px",
-              borderRadius: "9999px",
-              fontWeight: 600,
-              border: "1px solid rgba(207, 188, 255, 0.2)",
-              marginLeft: "4px",
-            }}
-          >
-            Workspace
-          </span>
-        </Link>
-
-        {/* Nav Links */}
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 14px",
-                  borderRadius: "8px",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  background: isActive ? "rgba(207, 188, 255, 0.1)" : "transparent",
-                  color: isActive ? "#cfbcff" : "#cbc3d5",
-                  border: isActive ? "1px solid rgba(207, 188, 255, 0.2)" : "1px solid transparent",
-                  transition: "all 0.2s",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
-                  {link.icon}
-                </span>
-                {link.label}
-              </Link>
-            );
-          })}
         </div>
-
-        {/* User + Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {isDemoMode && (
-            <span
-              style={{
-                fontSize: "0.7rem",
-                color: "#cfbcff",
-                background: "rgba(207, 188, 255, 0.08)",
-                border: "1px solid rgba(207, 188, 255, 0.2)",
-                padding: "3px 10px",
-                borderRadius: "6px",
-                fontWeight: 600,
-              }}
-            >
-              Demo Mode
-            </span>
-          )}
-
-          {/* Avatar + Name */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={
-                user?.photoURL ||
-                `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user?.displayName || "user")}`
-              }
-              alt="Profile"
-              style={{
-                width: "34px",
-                height: "34px",
-                borderRadius: "50%",
-                border: "2px solid rgba(207, 188, 255, 0.3)",
-                background: "rgba(255, 255, 255, 0.05)",
-              }}
-            />
-            <span style={{ fontSize: "0.825rem", fontWeight: 600, color: "#e3e1e9" }}>
-              {user?.displayName?.split(" ")[0] || "Educator"}
-            </span>
-          </div>
-
-          {/* Sign Out */}
-          <button
-            onClick={() => setConfirmSignoutOpen(true)}
-            style={{
-              background: "rgba(239, 68, 68, 0.05)",
-              color: "#f87171",
-              border: "1px solid rgba(239, 68, 68, 0.15)",
-              borderRadius: "8px",
-              padding: "7px 14px",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(239, 68, 68, 0.05)")}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "15px" }}>logout</span>
-            Sign Out
-          </button>
-        </div>
-      </div>
       </header>
+
       <SignoutConfirmModal
         isOpen={confirmSignoutOpen}
         onClose={() => setConfirmSignoutOpen(false)}

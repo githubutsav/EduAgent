@@ -86,9 +86,9 @@ describe('TranscriptManager', () => {
     mockMediaRecorderInstance.stop();
 
     // Wait for async ticks
-    await vi.runAllTicks();
-
-    expect(global.fetch).toHaveBeenCalledWith('/api/transcribe', expect.any(Object));
-    expect(firestore.saveTranscriptLine).toHaveBeenCalledWith('room-123', 'Hello class', 'Dr. Smith');
+    await vi.waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/transcribe', expect.any(Object));
+      expect(firestore.saveTranscriptLine).toHaveBeenCalledWith('room-123', 'Hello class', 'Dr. Smith');
+    });
   });
 });
