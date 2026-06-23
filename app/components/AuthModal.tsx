@@ -19,9 +19,10 @@ interface AuthModalProps {
   onClose: () => void;
   initialTab?: "login" | "signup";
   initialEmail?: string;
+  initialRole?: "teacher" | "student";
 }
 
-export default function AuthModal({ isOpen, onClose, initialTab = "login", initialEmail = "" }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, initialTab = "login", initialEmail = "", initialRole }: AuthModalProps) {
   const router = useRouter();
   const { isDemoMode, loginWithEmail, signUpWithEmail, loginWithGoogle, user } = useAuth();
   const [tab, setTab] = useState<"login" | "signup">(initialTab);
@@ -31,20 +32,21 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login", initi
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<"teacher" | "student">("student");
-  const [view, setView] = useState<"role-select" | "form">(initialTab === "signup" ? "role-select" : "form");
+  const [role, setRole] = useState<"teacher" | "student">(initialRole || "student");
+  const [view, setView] = useState<"role-select" | "form">(initialTab === "signup" && !initialRole ? "role-select" : "form");
 
   // Sync tab state with initialTab prop when modal opens
   useEffect(() => {
     if (isOpen) {
       setTab(initialTab);
-      setView(initialTab === "signup" ? "role-select" : "form");
+      setRole(initialRole || "student");
+      setView(initialTab === "signup" && !initialRole ? "role-select" : "form");
       setError("");
       setEmail(initialEmail || "");
       setPassword("");
       setName("");
     }
-  }, [isOpen, initialTab, initialEmail]);
+  }, [isOpen, initialTab, initialEmail, initialRole]);
 
   // Removed aggressive auto-redirect to prevent race conditions during Auth flows
 

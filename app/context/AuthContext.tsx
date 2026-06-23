@@ -106,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!isDemoMode && auth) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const fbUser = userCredential.user;
+        let role: "teacher" | "student" = "student";
         let additionalData = {};
         if (db) {
           const profileData = await getUserProfile(fbUser.uid);
