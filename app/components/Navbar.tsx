@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -12,9 +12,22 @@ export default function Navbar() {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"login" | "signup">("login");
+  const [modalEmail, setModalEmail] = useState("");
   const [confirmSignoutOpen, setConfirmSignoutOpen] = useState(false);
 
-  const openLogin = () => { setModalTab("login"); setModalOpen(true); };
+  const openLogin = () => { setModalTab("login"); setModalEmail(""); setModalOpen(true); };
+
+  useEffect(() => {
+    const handleOpenAuth = (e: Event) => {
+      const customEvent = e as CustomEvent<{ tab?: "login" | "signup"; email?: string }>;
+      const { tab = "login", email = "" } = customEvent.detail || {};
+      setModalTab(tab);
+      setModalEmail(email);
+      setModalOpen(true);
+    };
+    window.addEventListener("open-auth-modal", handleOpenAuth);
+    return () => window.removeEventListener("open-auth-modal", handleOpenAuth);
+  }, []);
 
   return (
     <>
@@ -82,6 +95,7 @@ export default function Navbar() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         initialTab={modalTab}
+        initialEmail={modalEmail}
       />
 
       {/* Sign Out Confirmation Modal */}

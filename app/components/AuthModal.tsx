@@ -18,14 +18,15 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: "login" | "signup";
+  initialEmail?: string;
 }
 
-export default function AuthModal({ isOpen, onClose, initialTab = "login" }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, initialTab = "login", initialEmail = "" }: AuthModalProps) {
   const router = useRouter();
   const { isDemoMode, loginWithEmail, signUpWithEmail, loginWithGoogle, user } = useAuth();
   const [tab, setTab] = useState<"login" | "signup">(initialTab);
   
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -39,11 +40,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }: Aut
       setTab(initialTab);
       setView(initialTab === "signup" ? "role-select" : "form");
       setError("");
-      setEmail("");
+      setEmail(initialEmail || "");
       setPassword("");
       setName("");
     }
-  }, [isOpen, initialTab]);
+  }, [isOpen, initialTab, initialEmail]);
 
   // Removed aggressive auto-redirect to prevent race conditions during Auth flows
 

@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function HeroSection() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [emailInput, setEmailInput] = useState("");
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -30,6 +35,18 @@ export default function HeroSection() {
     document.addEventListener("mousemove", handleMouseMove);
     return () => document.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  const handleJoinMovement = () => {
+    if (user) {
+      router.push("/dashboard");
+    } else {
+      window.dispatchEvent(
+        new CustomEvent("open-auth-modal", {
+          detail: { tab: "login", email: emailInput },
+        })
+      );
+    }
+  };
 
   return (
     <section className="relative pt-40 pb-32 px-6 overflow-hidden">
@@ -63,8 +80,13 @@ export default function HeroSection() {
             className="w-full h-14 px-6 rounded-full bg-white/5 border border-white/10 focus:border-primary/50 outline-none transition-all text-on-surface"
             placeholder="Enter your school email"
             type="email"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
           />
-          <button className="w-full md:w-auto h-14 px-8 rounded-full gradient-button text-[#090A0F] font-semibold whitespace-nowrap hover:scale-105 transition-transform">
+          <button
+            onClick={handleJoinMovement}
+            className="w-full md:w-auto h-14 px-8 rounded-full gradient-button text-[#090A0F] font-semibold whitespace-nowrap hover:scale-105 transition-transform"
+          >
             Join the Movement
           </button>
         </div>
