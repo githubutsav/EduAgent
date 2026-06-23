@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
@@ -37,19 +38,23 @@ export default function Navbar() {
         <nav className="w-full max-w-[1280px] backdrop-blur-xl border border-white/10 bg-[#121318]/80 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.5)] pointer-events-auto transition-all duration-300">
           <div className="flex justify-between items-center h-16 px-6">
             {/* Logo */}
-            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push("/")}>
+            <Link 
+              href="/" 
+              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
               <div className="w-8 h-8 rounded-lg gradient-button flex items-center justify-center group-hover:scale-105 transition-transform">
                 <GraduationCap size={20} color="#090A0F" strokeWidth={2.5} />
               </div>
               <span className="text-xl font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors">
                 EduAgent
               </span>
-            </div>
+            </Link>
 
             {/* Nav Links */}
             <div className="hidden md:flex items-center gap-8 pt-1">
               {[
-                { label: "Vision", href: "#" },
+                { label: "Vision", href: "#vision" },
                 { label: "Features", href: "#features" },
                 { label: "Experience", href: "#experience" },
               ].map((link) => (
