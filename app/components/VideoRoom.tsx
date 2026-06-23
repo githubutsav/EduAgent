@@ -39,6 +39,16 @@ interface CustomVideoConferenceProps {
 function CustomVideoConference({ handleDeviceError }: CustomVideoConferenceProps) {
   const layoutContext = useLayoutContext();
   const showChat = layoutContext.widget.state?.showChat;
+  const hasAutoOpenedChat = useRef(false);
+
+  useEffect(() => {
+    if (!hasAutoOpenedChat.current) {
+      if (!showChat) {
+        layoutContext.widget.dispatch?.({ msg: "toggle_chat" });
+      }
+      hasAutoOpenedChat.current = true;
+    }
+  }, [showChat, layoutContext.widget.dispatch]);
 
   return (
     <div className="lk-video-conference" style={{ position: "relative" }}>
@@ -52,16 +62,17 @@ function CustomVideoConference({ handleDeviceError }: CustomVideoConferenceProps
       {showChat && <Chat />}
       
       {/* Chat Toggle Button */}
-      <button
-        onClick={() => {
-          layoutContext.widget.dispatch?.({ msg: "toggle_chat" });
-        }}
-        style={{
-          position: "absolute",
-          bottom: "80px",
-          right: showChat ? "340px" : "20px",
-          zIndex: 1000,
-          background: "rgba(30, 30, 35, 0.85)",
+      {!showChat && (
+        <button
+          onClick={() => {
+            layoutContext.widget.dispatch?.({ msg: "toggle_chat" });
+          }}
+          style={{
+            position: "absolute",
+            bottom: "80px",
+            right: "20px",
+            zIndex: 1000,
+            background: "rgba(30, 30, 35, 0.85)",
           backdropFilter: "blur(8px)",
           border: "1px solid rgba(255, 255, 255, 0.15)",
           color: "#cfbcff",
@@ -87,10 +98,11 @@ function CustomVideoConference({ handleDeviceError }: CustomVideoConferenceProps
         }}
         title={showChat ? "Hide Chat" : "Show Chat"}
       >
-        <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>
-          {showChat ? "chat_bubble" : "forum"}
-        </span>
-      </button>
+          <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>
+            forum
+          </span>
+        </button>
+      )}
     </div>
   );
 }
