@@ -11,7 +11,7 @@ const challenges = [
 
 export default function ChallengeSection() {
   return (
-    <section id="features" className="py-32 px-6 relative overflow-hidden bg-[#0d0e13] border-t border-white/5">
+    <section className="py-32 px-6 relative overflow-hidden bg-[#0d0e13] border-t border-white/5">
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
 
