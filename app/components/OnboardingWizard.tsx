@@ -27,6 +27,12 @@ export default function OnboardingWizard() {
 
   const isStudent = userProfile.role === 'student';
 
+  const studentGrades = ["Middle School", "High School", "College/University", "Self-Taught", "Other"];
+  const teacherSubjects = ["Mathematics", "Science", "Literature & English", "History & Humanities", "Computer Science", "Multiple Subjects"];
+  
+  const studentGoals = ["Improve my grades", "Prepare for standardized tests", "Learn a new skill or language", "Get help with homework"];
+  const teacherGoals = ["Manage my classrooms", "Track student progress", "Create interactive quizzes", "Automate grading and analytics"];
+
   const handleNext = async () => {
     if (step < 1) {
       setStep(step + 1);
@@ -78,18 +84,26 @@ export default function OnboardingWizard() {
                 <p className="text-sm text-on-surface-variant">
                   {isStudent ? "What grade are you currently in?" : "What subjects do you specialize in?"}
                 </p>
-                <div className="relative">
-                  {isStudent ? <School className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant" /> : <BookOpen className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant" />}
-                  <input
-                    type="text"
-                    placeholder={isStudent ? "e.g. 10th Grade, College Freshman" : "e.g. Algebra, High School Physics"}
-                    value={isStudent ? formData.gradeLevel : formData.subjectsTaught}
-                    onChange={(e) => isStudent 
-                      ? setFormData({ ...formData, gradeLevel: e.target.value })
-                      : setFormData({ ...formData, subjectsTaught: e.target.value })
-                    }
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none transition-colors focus:border-primary/50 focus:bg-white/10"
-                  />
+                <div className="flex flex-wrap gap-2">
+                  {(isStudent ? studentGrades : teacherSubjects).map(option => {
+                    const isSelected = isStudent ? formData.gradeLevel === option : formData.subjectsTaught === option;
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => isStudent 
+                          ? setFormData({ ...formData, gradeLevel: option })
+                          : setFormData({ ...formData, subjectsTaught: option })
+                        }
+                        className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+                          isSelected 
+                            ? "border-primary bg-primary/10 text-white" 
+                            : "border-white/10 bg-white/5 text-on-surface-variant hover:border-white/20 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -99,14 +113,23 @@ export default function OnboardingWizard() {
                 <p className="text-sm text-on-surface-variant">
                   What's your primary goal on EduAgent?
                 </p>
-                <div className="relative">
-                  <Target className="absolute left-3 top-3 h-5 w-5 text-on-surface-variant" />
-                  <textarea
-                    placeholder="Briefly describe what you hope to achieve..."
-                    value={formData.bio}
-                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                    className="w-full min-h-[100px] resize-none rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none transition-colors focus:border-primary/50 focus:bg-white/10"
-                  />
+                <div className="flex flex-col gap-2">
+                  {(isStudent ? studentGoals : teacherGoals).map(goal => {
+                    const isSelected = formData.bio === goal;
+                    return (
+                      <button
+                        key={goal}
+                        onClick={() => setFormData({ ...formData, bio: goal })}
+                        className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-medium transition-all ${
+                          isSelected 
+                            ? "border-primary bg-primary/10 text-white" 
+                            : "border-white/10 bg-white/5 text-on-surface-variant hover:border-white/20 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {goal}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
