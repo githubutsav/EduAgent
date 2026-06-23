@@ -437,7 +437,7 @@ export default function StudentDashboard() {
         {/* Draggable Widgets Area */}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
-            <div className={`grid items-start grid-cols-1 gap-8 lg:grid-cols-3 transition-all ${isCustomizing ? 'p-4 rounded-3xl bg-white/5 border border-white/10 border-dashed' : ''}`}>
+            <div className={`grid grid-flow-row-dense grid-cols-1 gap-8 lg:grid-cols-3 transition-all ${isCustomizing ? 'p-4 rounded-3xl bg-white/5 border border-white/10 border-dashed' : ''}`}>
               {widgetOrder.map(id => (
                 <div key={id} className={getColSpan(id)}>
                   {renderWidget(id)}
