@@ -226,6 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw { code: "auth/account-not-found", message: "User not registered, please register." };
         }
 
+        let finalRole: "teacher" | "student" = role || "student";
         let additionalData = {};
         if (db) {
           const profileData = await getUserProfile(fbUser.uid);
