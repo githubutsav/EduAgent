@@ -19,6 +19,13 @@ export interface TranscriptLine {
   timestamp: any;
 }
 
+export interface ClassroomNote {
+  id?: string;
+  roomId: string;
+  content: string;
+  createdAt: any;
+}
+
 export interface QuizQuestion {
   question: string;
   options: string[];
@@ -438,4 +445,60 @@ export async function getTeacherStudentsAnalytics(teacherId: string) {
   });
 
   return analytics;
+}
+
+/**
+ * Saves generated notes to the classroom's notes subcollection.
+ */
+export async function saveClassroomNote(roomId: string, content: string) {
+  if (!db) {
+    if (typeof window !== "undefined") {
+      const key = `notes_${roomId}`;
+      localStorage.setItem(key, JSON.stringify({
+        roomId,
+        content,
+        createdAt: new Date().toISOString()
+      }));
+    }
+    return;
+  }
+  const classQ = query(collection(db, "classrooms"), where("roomCode", "==", roomId));
+  const classSnap = await getDocs(classQ);
+  if (classSnap.empty) return;
+  
+  const classDocId = classSnap.docs[0].id;
+  const notesRef = collection(db, "classrooms", classDocId, "notes");
+  
+  await addDoc(notesRef, {
+    roomId,
+    content,
+    createdAt: serverTimestamp()
+  });
+}
+
+/**
+ * Gets notes for a room.
+ */
+export async function getClassroomNotes(roomId: string): Promise<ClassroomNote[]> {
+  if (!db) {
+    if (typeof window !== "undefined") {
+      const key = `notes_${roomId}`;
+      const saved = localStorage.getItem(key);
+      return saved ? [JSON.parse(saved)] : [];
+    }
+    return [];
+  }
+  const classQ = query(collection(db, "classrooms"), where("roomCode", "==", roomId));
+  const classSnap = await getDocs(classQ);
+  if (classSnap.empty) return [];
+  
+  const classDocId = classSnap.docs[0].id;
+  const notesRef = collection(db, "classrooms", classDocId, "notes");
+  const q = query(notesRef, orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as ClassroomNote));
 }

@@ -17,6 +17,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import DraggableWidget from "./DraggableWidget";
 import FloatingChatbot from "./FloatingChatbot";
+import ClassHistoryModal from "./ClassHistoryModal";
 
 export default function StudentDashboard() {
   const { user, loading } = useAuth();
@@ -29,6 +30,7 @@ export default function StudentDashboard() {
   const [takingQuiz, setTakingQuiz] = useState<Quiz | null>(null);
 
   const [selectedQuiz, setSelectedQuiz] = useState<QuizResult | null>(null);
+  const [historyClassroom, setHistoryClassroom] = useState<Classroom | null>(null);
 
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(['metrics', 'classes', 'performance', 'upcoming', 'history']);
@@ -239,13 +241,22 @@ export default function StudentDashboard() {
                         <h3 className="text-base font-semibold text-white">{c.name}</h3>
                         <p className="mt-1 text-sm text-on-surface-variant">Teacher: <span className="text-white">{c.teacherName}</span></p>
                       </div>
-                      <button 
-                        onClick={() => router.push(`/classroom/${c.roomCode}`)} 
-                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-sky-400/10 py-2.5 text-sm font-semibold text-sky-400 transition-colors group-hover:bg-sky-400/20"
-                      >
-                        Enter Classroom
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
+                      <div className="mt-6 flex gap-2.5">
+                        <button 
+                          onClick={() => router.push(`/classroom/${c.roomCode}`)} 
+                          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-sky-400/10 py-2.5 text-xs sm:text-sm font-semibold text-sky-400 transition-colors hover:bg-sky-400/20"
+                        >
+                          Enter Live
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => setHistoryClassroom(c)} 
+                          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 py-2.5 text-xs sm:text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                        >
+                          <History className="h-3.5 w-3.5 text-orange-400" />
+                          History
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -400,6 +411,12 @@ export default function StudentDashboard() {
         onClose={() => setTakingQuiz(null)}
         quiz={takingQuiz}
         onQuizSubmitted={refreshData}
+      />
+
+      <ClassHistoryModal 
+        isOpen={!!historyClassroom} 
+        onClose={() => setHistoryClassroom(null)} 
+        classroom={historyClassroom} 
       />
 
       <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 p-6 lg:p-8 relative">
