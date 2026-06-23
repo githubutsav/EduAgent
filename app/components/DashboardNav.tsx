@@ -30,7 +30,7 @@ export default function DashboardNav() {
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6 lg:px-8">
           
           {/* Brand */}
-          <Link href="/dashboard" className="flex items-center gap-3 transition-opacity hover:opacity-90">
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-primary-container via-secondary to-tertiary shadow-sm">
               <GraduationCap className="h-5 w-5 text-background-deep" strokeWidth={2.5} />
             </div>
