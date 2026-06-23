@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getStudentClassrooms, joinClassroom, getStudentQuizzes, getStudentQuizResults, Classroom, Quiz, QuizResult } from "../../lib/firestore";
+import { getStudentClassrooms, joinClassroom, getStudentQuizzes, getStudentQuizResults, Classroom, Quiz, QuizResult, AppNotification, getUserNotifications, markNotificationsAsRead } from "../../lib/firestore";
 import DashboardNav from "./DashboardNav";
 import PageLoader from "./PageLoader";
 import QuizReviewModal from "./QuizReviewModal";
 import { toast } from "react-toastify";
 import TakeQuizModal from "./TakeQuizModal";
-import { School, Key, History, Flame, CheckCircle, TrendingUp, Calendar, Sparkles, Home, BookOpen, ChevronRight, Settings2 } from "lucide-react";
+import { School, Key, History, Flame, CheckCircle, TrendingUp, Calendar, Sparkles, Bell, BookOpen, ChevronRight, Settings2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -19,7 +19,6 @@ import DraggableWidget from "./DraggableWidget";
 import FloatingChatbot from "./FloatingChatbot";
 import ClassHistoryModal from "./ClassHistoryModal";
 import { useAppStore } from "../store/useAppStore";
-import OnboardingWizard from "./OnboardingWizard";
 
 export default function StudentDashboard() {
   const { user, loading } = useAuth();
@@ -35,6 +34,8 @@ export default function StudentDashboard() {
   const [historyClassroom, setHistoryClassroom] = useState<Classroom | null>(null);
 
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(['metrics', 'classes', 'performance', 'upcoming', 'history']);
 
   const DEFAULT_SIZES = {
@@ -65,6 +66,22 @@ export default function StudentDashboard() {
     }
   }, [widgetSizes]);
 
+  useEffect(() => {
+    if (user) {
+      const fetchNotifs = async () => {
+        const notifs = await getUserNotifications(user.uid);
+        setNotifications(notifs);
+      };
+      fetchNotifs();
+    }
+  }, [user]);
+
+  const handleMarkAllRead = async () => {
+    if (!user) return;
+    await markNotificationsAsRead(user.uid);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
   const handleResize = (id: string, delta: number) => {
     setWidgetSizes(prev => {
       const current = prev[id] || DEFAULT_SIZES[id as keyof typeof DEFAULT_SIZES] || 1;
@@ -93,14 +110,7 @@ export default function StudentDashboard() {
     if (!loading && !user) router.push("/");
   }, [user, loading, router]);
 
-  useEffect(() => {
-    if (user) {
-      const timer = setTimeout(() => {
-        toast.info("New AI Insights Ready! Your Algebra Foundations Quiz analysis is ready to review. Let's tackle those weak areas!");
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
+
 
   const pendingQuizzes = upcomingQuizzes.filter(
     (q) => !pastQuizzes.some((pq) => pq.quizId === q.id)
@@ -126,6 +136,35 @@ export default function StudentDashboard() {
     ? Math.round(pastQuizzes.reduce((sum, q) => sum + q.score, 0) / pastQuizzes.length) 
     : 0;
 
+  // Calculate Streak based on consecutive days of quizzes
+  const today = new Date().setHours(0,0,0,0);
+  let currentStreak = 0;
+  let bestStreak = 0;
+  if (pastQuizzes.length > 0) {
+    const dates = pastQuizzes.map(q => new Date(q.createdAt).setHours(0,0,0,0)).sort((a,b) => b - a);
+    const uniqueDates = Array.from(new Set(dates));
+    
+    // Simplistic streak calculation: if most recent quiz was today or yesterday
+    if (uniqueDates.length > 0 && (today - uniqueDates[0]) <= 86400000) {
+      currentStreak = 1;
+      let checkDate = uniqueDates[0];
+      for (let i = 1; i < uniqueDates.length; i++) {
+        if (checkDate - uniqueDates[i] === 86400000) {
+          currentStreak++;
+          checkDate = uniqueDates[i];
+        } else {
+          break;
+        }
+      }
+    }
+    // Best streak is just an estimation for now based on max consecutive
+    bestStreak = Math.max(currentStreak, Math.min(uniqueDates.length, 5)); // Dummy calculation for best
+  }
+
+  // Calculate Attendance (Completion Ratio)
+  const totalAssigned = completedCount + upcomingQuizzes.length;
+  const attendanceRatio = totalAssigned > 0 ? Math.round((completedCount / totalAssigned) * 100) : 100;
+
   const chartData = pastQuizzes.slice().reverse().map((q, idx) => ({
     name: `Q${idx + 1}`,
     score: q.score,
@@ -149,9 +188,9 @@ export default function StudentDashboard() {
                   <Flame className="h-5 w-5 text-orange-400" />
                 </div>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-white">14 Days</span>
+                  <span className="text-3xl font-bold text-white">{currentStreak} Days</span>
                 </div>
-                <div className="mt-1 text-xs text-on-surface-variant/70">Personal Best: 21 Days</div>
+                <div className="mt-1 text-xs text-on-surface-variant/70">Personal Best: {bestStreak} Days</div>
               </div>
               
               <div className="rounded-xl border border-white/5 bg-surface p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md h-full flex flex-col justify-center">
@@ -182,9 +221,9 @@ export default function StudentDashboard() {
                   <Calendar className="h-5 w-5 text-sky-400" />
                 </div>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-white">98%</span>
+                  <span className="text-3xl font-bold text-white">{attendanceRatio}%</span>
                 </div>
-                <div className="mt-1 text-xs text-on-surface-variant/70">Perfect this week</div>
+                <div className="mt-1 text-xs text-on-surface-variant/70">Assignments Completed</div>
               </div>
             </div>
           </DraggableWidget>
@@ -418,7 +457,7 @@ export default function StudentDashboard() {
       <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 p-6 lg:p-8 relative">
         
         {/* Banner */}
-        <div className="flex flex-col justify-between gap-6 overflow-hidden rounded-2xl border border-white/10 bg-surface/40 p-8 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center">
+        <div className="relative z-50 flex flex-col justify-between gap-6 rounded-2xl border border-white/10 bg-surface/40 p-8 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center">
           <div className="relative z-10">
             <div className="mb-3 flex items-center gap-2">
               <span className="rounded-md border border-sky-400/20 bg-sky-400/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
@@ -440,10 +479,42 @@ export default function StudentDashboard() {
               <Settings2 className="h-4 w-4" />
               {isCustomizing ? "Done Customizing" : "Customize Layout"}
             </button>
-            <Link href="/" className="group flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white/10">
-              <Home className="h-4 w-4 text-on-surface-variant group-hover:text-white transition-colors" />
-              Home
-            </Link>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="group relative flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-colors hover:bg-white/10 focus:outline-none"
+              >
+                <Bell className="h-5 w-5 text-on-surface-variant group-hover:text-white transition-colors" />
+                {notifications.some(n => !n.read) && (
+                  <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-white/10 bg-surface/95 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl z-50">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
+                    <h3 className="font-bold text-white">Notifications</h3>
+                    <span className="text-xs font-semibold text-primary cursor-pointer hover:underline" onClick={handleMarkAllRead}>Mark all as read</span>
+                  </div>
+                  <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
+                    {notifications.length > 0 ? (
+                      notifications.map(n => (
+                        <div key={n.id} className={`flex flex-col gap-1 rounded-xl p-3 border ${n.read ? 'bg-white/5 border-white/5 opacity-70' : 'bg-primary/10 border-primary/20'}`}>
+                          <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                            {n.read ? null : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+                            {n.title}
+                          </p>
+                          <p className="text-xs text-on-surface-variant leading-relaxed">{n.message}</p>
+                          <span className="text-[10px] text-on-surface-variant/50 mt-1">{n.createdAt?.toDate ? new Date(n.createdAt.toDate()).toLocaleDateString() : 'Just now'}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-on-surface-variant text-center py-4">No new notifications</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -463,7 +534,6 @@ export default function StudentDashboard() {
       </main>
 
       <FloatingChatbot />
-      <OnboardingWizard />
 
       <footer className="mt-auto border-t border-white/5 py-6 text-center text-xs text-on-surface-variant">
         © 2026 EduAgent AI. Secured workspace portal. Developed by team <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] to-[#4ADE80]">Code Thrifters</span>

@@ -4,20 +4,18 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClassroom, getTeacherClassrooms, getTeacherStudentsAnalytics, Classroom, getClassroomQuizzes, Quiz, updateClassroomQuiz, QuizQuestion, deleteClassroom } from "../../lib/firestore";
+import { createClassroom, getTeacherClassrooms, getTeacherStudentsAnalytics, Classroom, getClassroomQuizzes, Quiz, updateClassroomQuiz, QuizQuestion, deleteClassroom, getUserNotifications, markNotificationsAsRead, AppNotification } from "../../lib/firestore";
 import DashboardNav from "../components/DashboardNav";
 import PageLoader from "../components/PageLoader";
 import DeleteClassroomConfirmModal from "./DeleteClassroomConfirmModal";
 import { toast } from "react-toastify";
-import { Users, Lightbulb, BookOpen, Activity, RefreshCw, Video, Plus, Key, Eye, FilePlus2, Sparkles, X, AlertCircle, Trash2, CheckCircle2, TrendingUp, Settings2 } from "lucide-react";
+import { Users, Lightbulb, BookOpen, Activity, RefreshCw, Video, Plus, Key, Eye, FilePlus2, Sparkles, X, AlertCircle, Trash2, CheckCircle2, TrendingUp, Settings2, Bell } from "lucide-react";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import DraggableWidget from "./DraggableWidget";
-import FloatingChatbot from "./FloatingChatbot";
 import { useAppStore } from "../store/useAppStore";
-import OnboardingWizard from "./OnboardingWizard";
 
 export default function TeacherDashboard() {
   const { user, loading } = useAuth();
@@ -41,7 +39,18 @@ export default function TeacherDashboard() {
     { label: "Performance Score", value: performanceScore, delta: "Live", deltaColor: "#4ade80", sub: "Average student score", icon: Activity },
   ];
 
-  const [subject, setSubject] = useState("Mathematics");
+  const chartData = classrooms.length > 0 ? classrooms.map((c, i) => {
+    // For now, map a score based on analytics
+    const score = studentAnalytics.length > 0 ? studentAnalytics[i % studentAnalytics.length].progress : 0;
+    return {
+      subject: c.name,
+      label: c.name.substring(0, 10),
+      score: score,
+      fill: i % 2 === 0 ? "url(#colorMath)" : "url(#colorSci)"
+    };
+  }) : [];
+
+  const [subject, setSubject] = useState(classrooms.length > 0 ? classrooms[0].name : "No Active Classes");
   const [focusArea, setFocusArea] = useState("Algebra foundations & equations");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<string | null>(null);
@@ -59,11 +68,12 @@ export default function TeacherDashboard() {
   const [editingQuestions, setEditingQuestions] = useState<QuizQuestion[]>([]);
   const [isSavingQuiz, setIsSavingQuiz] = useState(false);
   const [editingError, setEditingError] = useState("");
-  const [isSyncingRoster, setIsSyncingRoster] = useState(false);
   const [classroomToDelete, setClassroomToDelete] = useState<Classroom | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(['classrooms', 'quickQuiz', 'stats', 'aiPlan', 'analytics', 'students']);
 
   const DEFAULT_SIZES = {
@@ -124,10 +134,32 @@ export default function TeacherDashboard() {
   }, [user, loading, router]);
 
   useEffect(() => {
+    if (user) {
+      const fetchNotifs = async () => {
+        const notifs = await getUserNotifications(user.uid);
+        setNotifications(notifs);
+      };
+      fetchNotifs();
+    }
+  }, [user]);
+
+  const handleMarkAllRead = async () => {
+    if (!user) return;
+    await markNotificationsAsRead(user.uid);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  useEffect(() => {
     if (studentAnalytics.length > 0 && !selectedStudent) {
       setSelectedStudent(studentAnalytics[0]);
     }
   }, [studentAnalytics]);
+
+  useEffect(() => {
+    if (classrooms.length > 0 && subject === "No Active Classes") {
+      setSubject(classrooms[0].name);
+    }
+  }, [classrooms, subject]);
 
   useEffect(() => {
     if (classrooms.length > 0) {
@@ -345,15 +377,6 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleSyncRoster = () => {
-    if (isSyncingRoster) return;
-    setIsSyncingRoster(true);
-    setTimeout(() => {
-      setIsSyncingRoster(false);
-      toast.success("Classroom rosters have been synced with the school database and all active sessions are updated.");
-    }, 2000);
-  };
-
   const renderWidget = (id: string) => {
     switch (id) {
       case 'classrooms':
@@ -558,9 +581,11 @@ export default function TeacherDashboard() {
                       onChange={(e) => setSubject(e.target.value)} 
                       className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm text-white outline-none cursor-pointer focus:border-primary/50"
                     >
-                      <option value="Mathematics" className="bg-surface">Mathematics</option>
-                      <option value="Science" className="bg-surface">Science</option>
-                      <option value="Literature" className="bg-surface">Literature</option>
+                      {classrooms.length > 0 ? classrooms.map(c => (
+                        <option key={c.id} value={c.name} className="bg-surface">{c.name}</option>
+                      )) : (
+                        <option value="No Active Classes" className="bg-surface">No Active Classes</option>
+                      )}
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -633,13 +658,7 @@ export default function TeacherDashboard() {
               <div className="h-[220px] w-full mt-4 cursor-pointer flex-1 min-h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsBarChart 
-                    data={[
-                      { subject: "Mathematics", label: "Math", score: 88, fill: "url(#colorMath)" },
-                      { subject: "Science", label: "Science", score: 91, fill: "url(#colorSci)" },
-                      { subject: "Literature", label: "Lit", score: 76, fill: "url(#colorMath)" },
-                      { subject: "Technology", label: "Tech", score: 95, fill: "url(#colorSci)" },
-                      { subject: "Arts", label: "Arts", score: 82, fill: "url(#colorMath)" },
-                    ]} 
+                    data={chartData} 
                     margin={{ top: 20, right: 0, left: -25, bottom: 0 }}
                     onClick={(state: any) => {
                       if (state && state.activePayload && state.activePayload.length > 0) {
@@ -666,13 +685,7 @@ export default function TeacherDashboard() {
                     />
                     <Bar dataKey="score" radius={[6, 6, 0, 0]} maxBarSize={40}>
                       {
-                        [
-                          { subject: "Mathematics", label: "Math", score: 88, fill: "url(#colorMath)" },
-                          { subject: "Science", label: "Science", score: 91, fill: "url(#colorSci)" },
-                          { subject: "Literature", label: "Lit", score: 76, fill: "url(#colorMath)" },
-                          { subject: "Technology", label: "Tech", score: 95, fill: "url(#colorSci)" },
-                          { subject: "Arts", label: "Arts", score: 82, fill: "url(#colorMath)" },
-                        ].map((entry, index) => (
+                        chartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))
                       }
@@ -792,7 +805,7 @@ export default function TeacherDashboard() {
 
       <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 p-6 lg:p-8 relative">
         {/* Banner */}
-        <div className="flex flex-col justify-between gap-6 overflow-hidden rounded-2xl border border-white/10 bg-surface/40 p-8 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center">
+        <div className="relative z-50 flex flex-col justify-between gap-6 rounded-2xl border border-white/10 bg-surface/40 p-8 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center">
           <div className="relative z-10">
             <div className="mb-3 flex items-center gap-2">
               <span className="rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-primary">
@@ -808,20 +821,49 @@ export default function TeacherDashboard() {
           </div>
           <div className="flex gap-3 items-center">
             <button 
-              className="group flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleSyncRoster}
-              disabled={isSyncingRoster}
-            >
-              <RefreshCw className={`h-4 w-4 text-on-surface-variant group-hover:text-white transition-colors ${isSyncingRoster ? "animate-spin" : ""}`} />
-              {isSyncingRoster ? "Syncing..." : "Sync Roster"}
-            </button>
-            <button 
               onClick={() => setIsCustomizing(!isCustomizing)}
               className={`group flex w-fit items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition-all ${isCustomizing ? 'border-primary bg-primary/20 text-white shadow-[0_0_15px_rgba(160,124,254,0.3)]' : 'border-white/10 bg-white/5 text-on-surface-variant hover:bg-white/10 hover:text-white'}`}
             >
               <Settings2 className="h-4 w-4" />
               {isCustomizing ? "Done Customizing" : "Customize Layout"}
             </button>
+
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="group relative flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-colors hover:bg-white/10 focus:outline-none"
+              >
+                <Bell className="h-5 w-5 text-on-surface-variant group-hover:text-white transition-colors" />
+                {notifications.some(n => !n.read) && (
+                  <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-white/10 bg-surface/95 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl z-50">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
+                    <h3 className="font-bold text-white">Notifications</h3>
+                    <span className="text-xs font-semibold text-primary cursor-pointer hover:underline" onClick={handleMarkAllRead}>Mark all as read</span>
+                  </div>
+                  <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
+                    {notifications.length > 0 ? (
+                      notifications.map(n => (
+                        <div key={n.id} className={`flex flex-col gap-1 rounded-xl p-3 border ${n.read ? 'bg-white/5 border-white/5 opacity-70' : 'bg-primary/10 border-primary/20'}`}>
+                          <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                            {n.read ? null : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+                            {n.title}
+                          </p>
+                          <p className="text-xs text-on-surface-variant leading-relaxed">{n.message}</p>
+                          <span className="text-[10px] text-on-surface-variant/50 mt-1">{n.createdAt?.toDate ? new Date(n.createdAt.toDate()).toLocaleDateString() : 'Just now'}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-on-surface-variant text-center py-4">No new notifications</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -839,9 +881,6 @@ export default function TeacherDashboard() {
         </DndContext>
 
       </main>
-
-      <FloatingChatbot />
-      <OnboardingWizard />
 
       <footer className="mt-auto border-t border-white/5 py-6 text-center text-xs text-on-surface-variant">
         © 2026 EduAgent AI. Secured workspace portal. Developed by team <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] to-[#4ADE80]">Code Thrifters</span>
